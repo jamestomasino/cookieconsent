@@ -63,17 +63,19 @@ window.onload = function() {
 
   function showBanner() {
     const cm = JSON.parse(window.localStorage.getItem('consentMode'))
-    if (cm.functionality_storage == 'granted') {
-      document.querySelector('#consent-necessary').checked = true
-      document.querySelector('#consent-necessary').disabled = true
-    } else {
-      document.querySelector('#consent-necessary').checked = false
-      document.querySelector('#consent-necessary').disabled = false
+    if (cm && cm.functionality_storage) {
+      if (cm.functionality_storage == 'granted') {
+        document.querySelector('#consent-necessary').checked = true
+        document.querySelector('#consent-necessary').disabled = true
+      } else {
+        document.querySelector('#consent-necessary').checked = false
+        document.querySelector('#consent-necessary').disabled = false
+      }
+      document.querySelector('#consent-analytics').checked = (cm.analytics_storage == 'granted') ? true : false
+      document.querySelector('#consent-preferences').checked = (cm.ad_personalization == 'granted') ? true : false
+      document.querySelector('#consent-marketing').checked = (cm.ad_storage == 'granted') ? true : false
+      document.querySelector('#consent-partners').checked = (cm.ad_personalization == 'granted') ? true : false
     }
-    document.querySelector('#consent-analytics').checked = (cm.analytics_storage == 'granted') ? true : false
-    document.querySelector('#consent-preferences').checked = (cm.ad_personalization == 'granted') ? true : false
-    document.querySelector('#consent-marketing').checked = (cm.ad_storage == 'granted') ? true : false
-    document.querySelector('#consent-partners').checked = (cm.ad_personalization == 'granted') ? true : false
     cookie_consent_banner.style.display = 'flex';
   }
 

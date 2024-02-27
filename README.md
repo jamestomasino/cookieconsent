@@ -12,6 +12,12 @@ GlobalPrivacyControl signals when set.
    run before GTM is loaded.
 2. Add the `cookieconsent.css` file to your site where appropriate. Feel free to
    edit the styles to match your site look and feel.
-3. In GTM, enable Consent Mode.
-4. Check the Consent Mode settings against your tags to be sure they are
+3. Add an element somewhere on your side with the class name
+   `cookie-consent-banner-open`. This element will re-open the consent menu and
+   allow users to change their choices. Alternatively, you can call the global
+   function `window.cookieconsent.show()` to launch the menu.
+4. In GTM, enable Consent Mode.
+5. Check the Consent Mode settings against your tags to be sure they are
    appropriately aligned.
+
+Tip: *View the index.html for a working example.*

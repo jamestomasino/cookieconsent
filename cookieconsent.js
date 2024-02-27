@@ -17,17 +17,19 @@ if (localStorage.getItem('consentMode') === null) {
 window.onload = function() {
   const cookie_consent_banner_dom = `
     <div id="cookie-consent-banner" class="cookie-consent-banner">
-        <h3>Cookie settings</h3>
-        <p>We use cookies to provide you with the best possible experience. They also allow us to analyze user behavior in order to constantly improve the website for you.</p>
-        <button id="cookie-consent-btn-accept-all" class="cookie-consent-button btn-success">Accept All</button>
-        <button id="cookie-consent-btn-accept-some" class="cookie-consent-button btn-outline">Accept Selection</button>
-        <button id="cookie-consent-btn-reject-all" class="cookie-consent-button btn-grayscale">Reject All</button>
+        <h3>This website uses cookies</h3>
+        <p>We use cookies to personalise content and ads, to provide social media features and to analyse our traffic. We also share information about your use of our site with our social media, advertising and analytics partners who may combine it with other information that you’ve provided to them or that they’ve collected from your use of their services.</p>
         <div class="cookie-consent-options">
           <label><input id="consent-necessary" type="checkbox" value="Necessary" checked disabled>Necessary</label>
           <label><input id="consent-analytics" type="checkbox" value="Analytics" checked>Analytics</label>
           <label><input id="consent-preferences" type="checkbox" value="Preferences" checked>Preferences</label>
           <label><input id="consent-marketing" type="checkbox" value="Marketing" checked>Marketing</label>
           <label><input id="consent-partners" type="checkbox" value="Partners">Partners</label>
+        </div>
+        <div class="cookie-consent-buttons">
+          <button id="cookie-consent-btn-reject-all" class="cookie-consent-button btn-grayscale">Reject All</button>
+          <button id="cookie-consent-btn-accept-some" class="cookie-consent-button btn-outline">Accept Selection</button>
+          <button id="cookie-consent-btn-accept-all" class="cookie-consent-button btn-success">Accept All</button>
         </div>
     </div>
   `
@@ -44,7 +46,7 @@ window.onload = function() {
   }
 
   function showBanner() {
-    cookie_consent_banner.style.display = 'block';
+    cookie_consent_banner.style.display = 'flex';
   }
 
   function hideBanner() {

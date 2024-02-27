@@ -1,3 +1,18 @@
+/*
+    Overview: Consent mode parameters
+
+    Consent Type - Description
+    ad_storage         - Enables storage (such as cookies) related to advertising.
+    ad_user_data       - Sets consent for sending user data related to advertising to Google.
+    ad_personalization - Sets consent for personalized advertising.
+    analytics_storage  - Enables storage (such as cookies) related to analytics e.g. visit duration.
+
+    In addition to the consent mode parameters, there are the following privacy parameters:
+    Storage Type            - Description
+    functionality_storage   - Enables storage that supports the functionality of the website or app e.g. language settings.
+    personalization_storage - Enables storage related to personalization e.g. video recommendations
+    security_storage        - Enables storage related to security such as authentication functionality, fraud prevention, and other user protection.
+*/
 window.dataLayer = window.dataLayer || [];
 function gtag() { dataLayer.push(arguments); }
 
@@ -9,6 +24,7 @@ if (localStorage.getItem('consentMode') === null) {
     'ad_user_data': 'denied',
     'ad_personalization': 'denied',
     'analytics_storage': 'denied',
+    'wait_for_update': 500,
   });
 } else {
   gtag('consent', 'default', JSON.parse(localStorage.getItem('consentMode')));
@@ -22,8 +38,8 @@ window.onload = function() {
         <div class="cookie-consent-options">
           <label><input id="consent-necessary" type="checkbox" value="Necessary" checked disabled>Necessary</label>
           <label><input id="consent-analytics" type="checkbox" value="Analytics" checked>Analytics</label>
-          <label><input id="consent-preferences" type="checkbox" value="Preferences" checked>Preferences</label>
           <label><input id="consent-marketing" type="checkbox" value="Marketing" checked>Marketing</label>
+          <label><input id="consent-preferences" type="checkbox" value="Preferences" checked>Preferences</label>
           <label><input id="consent-partners" type="checkbox" value="Partners">Partners</label>
         </div>
         <div class="cookie-consent-buttons">
@@ -46,6 +62,18 @@ window.onload = function() {
   }
 
   function showBanner() {
+    const cm = JSON.parse(window.localStorage.getItem('consentMode'))
+    if (cm.functionality_storage == 'granted') {
+      document.querySelector('#consent-necessary').checked = true
+      document.querySelector('#consent-necessary').disabled = true
+    } else {
+      document.querySelector('#consent-necessary').checked = false
+      document.querySelector('#consent-necessary').disabled = false
+    }
+    document.querySelector('#consent-analytics').checked = (cm.analytics_storage == 'granted') ? true : false
+    document.querySelector('#consent-preferences').checked = (cm.ad_personalization == 'granted') ? true : false
+    document.querySelector('#consent-marketing').checked = (cm.ad_storage == 'granted') ? true : false
+    document.querySelector('#consent-partners').checked = (cm.ad_personalization == 'granted') ? true : false
     cookie_consent_banner.style.display = 'flex';
   }
 
@@ -62,11 +90,11 @@ window.onload = function() {
     const consentMode = {
       'functionality_storage': consent.necessary ? 'granted' : 'denied',
       'security_storage': consent.necessary ? 'granted' : 'denied',
-      'ad_storage': (consent.marketing && !dnt()) ? 'granted' : 'denied',
+      'personalization_storage ': consent.preferences ? 'granted' : 'denied',
+      'analytics_storage': (consent.analytics && !dnt()) ? 'granted' : 'denied',
+      'ad_storage': (consent.analytics && !dnt()) ? 'granted' : 'denied',
       'ad_user_data': (consent.marketing && !dnt()) ? 'granted' : 'denied',
       'ad_personalization': (consent.partners && !gpc()) ? 'granted' : 'denied',
-      'analytics_storage': consent.analytics ? 'granted' : 'denied',
-      'ad_personalization': consent.preferences ? 'granted' : 'denied',
     };
     window.cookieconsent.consentMode = consentMode
     gtag('consent', 'update', consentMode);

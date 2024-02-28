@@ -1,17 +1,14 @@
 /*
     Overview: Consent mode parameters
 
-    Consent Type - Description
-    ad_storage         - Enables storage (such as cookies) related to advertising.
-    ad_user_data       - Sets consent for sending user data related to advertising to Google.
-    ad_personalization - Sets consent for personalized advertising.
-    analytics_storage  - Enables storage (such as cookies) related to analytics e.g. visit duration.
-
-    In addition to the consent mode parameters, there are the following privacy parameters:
-    Storage Type            - Description
-    functionality_storage   - Enables storage that supports the functionality of the website or app e.g. language settings.
-    personalization_storage - Enables storage related to personalization e.g. video recommendations
-    security_storage        - Enables storage related to security such as authentication functionality, fraud prevention, and other user protection.
+    Setting Name            Used by Google    Description
+    ad_storage              Yes               Enables storage (such as cookies) related to advertising
+    analytics_storage       Yes               Enables storage (such as cookies) related to analytics e.g. visit duration
+    ad_user_data            Yes               Whether Google’s services can use user data for building advertising audiences
+    ad_personalization      Yes               Whether Google’s services can use the data for remarketing
+    functionality_storage   No                Enables storage that supports the functionality of the website or app e.g. language settings
+    personalization_storage No                Enables storage related to personalization e.g. video recommendations
+    security_storage        No                Enables storage related to security such as authentication functionality, fraud prevention, and other user protection
 */
 window.dataLayer = window.dataLayer || [];
 function gtag() { dataLayer.push(arguments); }
@@ -90,13 +87,13 @@ window.onload = function() {
 
   function setConsent(consent) {
     const consentMode = {
-      'functionality_storage': consent.necessary ? 'granted' : 'denied',
-      'security_storage': consent.necessary ? 'granted' : 'denied',
-      'personalization_storage ': consent.preferences ? 'granted' : 'denied',
+      'ad_storage': (consent.marketing && !dnt()) ? 'granted' : 'denied',
       'analytics_storage': (consent.analytics && !dnt()) ? 'granted' : 'denied',
-      'ad_storage': (consent.analytics && !dnt()) ? 'granted' : 'denied',
       'ad_user_data': (consent.marketing && !dnt()) ? 'granted' : 'denied',
       'ad_personalization': (consent.partners && !gpc()) ? 'granted' : 'denied',
+      'functionality_storage': consent.necessary ? 'granted' : 'denied',
+      'personalization_storage ': consent.preferences ? 'granted' : 'denied',
+      'security_storage': consent.necessary ? 'granted' : 'denied',
     };
     window.cookieconsent.consentMode = consentMode
     gtag('consent', 'update', consentMode);
@@ -138,7 +135,7 @@ window.onload = function() {
     });
     cookie_consent_banner.querySelector('#cookie-consent-btn-reject-all').addEventListener('click', () => {
       setConsent({
-        necessary: false,
+        necessary: true,
         analytics: false,
         preferences: false,
         marketing: false,

@@ -93,7 +93,7 @@ window.onload = function() {
       'ad_user_data': (consent.marketing && !dnt()) ? 'granted' : 'denied',
       'ad_personalization': (consent.partners && !gpc()) ? 'granted' : 'denied',
       'functionality_storage': consent.necessary ? 'granted' : 'denied',
-      'personalization_storage ': consent.preferences ? 'granted' : 'denied',
+      'personalization_storage': consent.preferences ? 'granted' : 'denied',
       'security_storage': consent.necessary ? 'granted' : 'denied',
     };
     window.cookieconsent.consentMode = consentMode

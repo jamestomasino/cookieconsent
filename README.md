@@ -10,6 +10,11 @@ GlobalPrivacyControl signals when set.
 1. Add the `cookieconsent.js` to your site's HEAD tag. Be sure it is placed
    before your Google Tag Manager script and it is not deferred. This file must
    run before GTM is loaded.
+2. Choose your default strategy in `cookieconsent.js`:
+   - Set `USE_REGION_LIST = true` and update `CONSENT_REGION_LIST` to target only
+     regulated regions (higher data retention, needs maintenance as laws change).
+   - Set `USE_REGION_LIST = false` for a global conservative default (lowest
+     maintenance, more data loss).
 2. Add the `cookieconsent.css` file to your site where appropriate. Feel free to
    edit the styles to match your site look and feel.
 3. Add an element somewhere on your side with the class name

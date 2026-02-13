@@ -13,19 +13,41 @@
 window.dataLayer = window.dataLayer || [];
 function gtag() { dataLayer.push(arguments); }
 
+// If true, only apply default-deny to users in CONSENT_REGION_LIST.
+// If false, apply default-deny globally (more conservative, less maintenance).
+const USE_REGION_LIST = true;
+
+// Regions where consent is required before storing/reading ads/analytics cookies.
+// Update this list to match your compliance needs when USE_REGION_LIST is true.
+const CONSENT_REGION_LIST = [
+  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU',
+  'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES',
+  'SE', 'IS', 'LI', 'NO', 'GB', 'CH'
+];
+
+const DEFAULT_CONSENT = {
+  'functionality_storage': 'denied',
+  'security_storage': 'denied',
+  'ad_storage': 'denied',
+  'ad_user_data': 'denied',
+  'ad_personalization': 'denied',
+  'analytics_storage': 'denied',
+  'personalization_storage': 'denied',
+  'wait_for_update': 500,
+};
+
 if (localStorage.getItem('consentMode') === null) {
-  gtag('consent', 'default', {
-    'functionality_storage': 'denied',
-    'security_storage': 'denied',
-    'ad_storage': 'denied',
-    'ad_user_data': 'denied',
-    'ad_personalization': 'denied',
-    'analytics_storage': 'denied',
-    'personalization_storage': 'denied',
-    'wait_for_update': 500,
-  });
+  if (USE_REGION_LIST) {
+    gtag('consent', 'default', Object.assign({}, DEFAULT_CONSENT, { region: CONSENT_REGION_LIST }));
+  }
+  gtag('consent', 'default', DEFAULT_CONSENT);
+  gtag('set', 'ads_data_redaction', true);
 } else {
-  gtag('consent', 'default', JSON.parse(localStorage.getItem('consentMode')));
+  if (USE_REGION_LIST) {
+    gtag('consent', 'default', Object.assign({}, DEFAULT_CONSENT, { region: CONSENT_REGION_LIST }));
+  }
+  gtag('consent', 'default', DEFAULT_CONSENT);
+  gtag('consent', 'update', JSON.parse(localStorage.getItem('consentMode')));
 }
 
 window.onload = function() {
@@ -70,7 +92,7 @@ window.onload = function() {
         document.querySelector('#consent-necessary').disabled = false
       }
       document.querySelector('#consent-analytics').checked = (cm.analytics_storage == 'granted') ? true : false
-      document.querySelector('#consent-preferences').checked = (cm.ad_personalization == 'granted') ? true : false
+      document.querySelector('#consent-preferences').checked = (cm.personalization_storage == 'granted') ? true : false
       document.querySelector('#consent-marketing').checked = (cm.ad_storage == 'granted') ? true : false
       document.querySelector('#consent-partners').checked = (cm.ad_personalization == 'granted') ? true : false
     }
@@ -98,6 +120,7 @@ window.onload = function() {
     };
     window.cookieconsent.consentMode = consentMode
     gtag('consent', 'update', consentMode);
+    gtag('set', 'ads_data_redaction', consentMode.ad_storage === 'denied');
     localStorage.setItem('consentMode', JSON.stringify(consentMode));
   }
 

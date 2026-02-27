@@ -231,6 +231,18 @@ function loadGtmById(gtmId) {
   return gtmLoaderPromise;
 }
 
+function pushConsentUpdatedEvent(consentMode) {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({
+    event: 'consent_updated',
+    consent: consentMode,
+    ad_storage: consentMode.ad_storage,
+    analytics_storage: consentMode.analytics_storage,
+    ad_user_data: consentMode.ad_user_data,
+    ad_personalization: consentMode.ad_personalization
+  });
+}
+
 /* ---------------------------
  * Consent State Updates
  * --------------------------- */
@@ -255,6 +267,9 @@ function setConsent(consent) {
 
   window.cookieconsent.consentMode = consentMode;
   gtag('consent', 'update', consentMode);
+  window.setTimeout(() => {
+    pushConsentUpdatedEvent(consentMode);
+  }, 50);
   gtag('set', 'ads_data_redaction', consentMode.ad_storage === 'denied');
   localStorage.setItem('consentMode', JSON.stringify(consentMode));
 }
@@ -401,6 +416,13 @@ const normalizedStoredConsent = normalizeConsentForUpdate(getStoredConsent());
 if (normalizedStoredConsent) {
   gtag('consent', 'update', normalizedStoredConsent);
   gtag('set', 'ads_data_redaction', normalizedStoredConsent.ad_storage === 'denied');
+}
+
+const consentModeForBootEvent = normalizedStoredConsent || normalizeConsentForUpdate(DEFAULT_CONSENT);
+if (consentModeForBootEvent) {
+  window.setTimeout(() => {
+    pushConsentUpdatedEvent(consentModeForBootEvent);
+  }, 0);
 }
 
 // GTM is optional here: if no ID is configured, loading is skipped.

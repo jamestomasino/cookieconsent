@@ -73,6 +73,21 @@ Copy/paste examples:
 </script>
 ```
 
+## GTM Starter Export
+
+This repository includes a GTM workspace export with consent support assets:
+
+- [consent-updated-triggers-and-dlvs.json](./gtm/consent-updated-triggers-and-dlvs.json)
+
+The export is intended as a starter and includes:
+- `consent_updated` custom event triggers
+- data layer variables such as `dlv - ad_storage` and `dlv - analytics_storage`
+
+Import notes:
+- Import into a workspace first, review all assets, then publish.
+- Container IDs, tag names, and firing logic may need adjustment for your site.
+- Keep your `cookieconsent.js` event payload keys aligned with imported DLV names.
+
 ## Public API
 
 `window.cookieconsent.show()`

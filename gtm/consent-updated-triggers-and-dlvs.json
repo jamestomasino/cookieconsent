@@ -1,0 +1,319 @@
+{
+    "exportFormatVersion": 2,
+    "exportTime": "2026-02-27 19:13:16",
+    "containerVersion": {
+        "path": "accounts/4656491844/containers/238248077/versions/0",
+        "accountId": "4656491844",
+        "containerId": "238248077",
+        "containerVersionId": "0",
+        "container": {
+            "path": "accounts/4656491844/containers/238248077",
+            "accountId": "4656491844",
+            "containerId": "238248077",
+            "name": "www.nuzyrahcp.com",
+            "publicId": "GTM-MGK5J4S8",
+            "usageContext": [
+                "WEB"
+            ],
+            "fingerprint": "1766154416336",
+            "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/4656491844/containers/238248077/workspaces?apiLink=container",
+            "features": {
+                "supportUserPermissions": true,
+                "supportEnvironments": true,
+                "supportWorkspaces": true,
+                "supportGtagConfigs": false,
+                "supportBuiltInVariables": true,
+                "supportClients": false,
+                "supportFolders": true,
+                "supportTags": true,
+                "supportTemplates": true,
+                "supportTriggers": true,
+                "supportVariables": true,
+                "supportVersions": true,
+                "supportZones": true,
+                "supportTransformations": false
+            },
+            "tagIds": [
+                "GTM-MGK5J4S8"
+            ]
+        },
+        "trigger": [
+            {
+                "accountId": "4656491844",
+                "containerId": "238248077",
+                "triggerId": "124",
+                "name": "Consent Updated - ad_storage granted",
+                "type": "CUSTOM_EVENT",
+                "customEventFilter": [
+                    {
+                        "type": "EQUALS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{_event}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "consent_updated"
+                            }
+                        ]
+                    }
+                ],
+                "filter": [
+                    {
+                        "type": "CONTAINS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{dlv - ad_storage}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "granted"
+                            }
+                        ]
+                    }
+                ],
+                "fingerprint": "1772216243264"
+            },
+            {
+                "accountId": "4656491844",
+                "containerId": "238248077",
+                "triggerId": "125",
+                "name": "Consent Updated - analytics_storage granted",
+                "type": "CUSTOM_EVENT",
+                "customEventFilter": [
+                    {
+                        "type": "EQUALS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{_event}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "consent_updated"
+                            }
+                        ]
+                    }
+                ],
+                "filter": [
+                    {
+                        "type": "CONTAINS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{dlv - analytics_storage}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "granted"
+                            }
+                        ]
+                    }
+                ],
+                "fingerprint": "1772216251556"
+            },
+            {
+                "accountId": "4656491844",
+                "containerId": "238248077",
+                "triggerId": "127",
+                "name": "Consent Updated - ad_user_data granted",
+                "type": "CUSTOM_EVENT",
+                "customEventFilter": [
+                    {
+                        "type": "EQUALS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{_event}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "consent_updated"
+                            }
+                        ]
+                    }
+                ],
+                "filter": [
+                    {
+                        "type": "CONTAINS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{dlv - ad_user_data}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "granted"
+                            }
+                        ]
+                    }
+                ],
+                "fingerprint": "1772219428602"
+            },
+            {
+                "accountId": "4656491844",
+                "containerId": "238248077",
+                "triggerId": "128",
+                "name": "Consent Updated - ad_personalization granted",
+                "type": "CUSTOM_EVENT",
+                "customEventFilter": [
+                    {
+                        "type": "EQUALS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{_event}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "consent_updated"
+                            }
+                        ]
+                    }
+                ],
+                "filter": [
+                    {
+                        "type": "CONTAINS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{dlv - ad_personalization}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "granted"
+                            }
+                        ]
+                    }
+                ],
+                "fingerprint": "1772219453720"
+            }
+        ],
+        "variable": [
+            {
+                "accountId": "4656491844",
+                "containerId": "238248077",
+                "variableId": "120",
+                "name": "dlv - ad_storage",
+                "type": "v",
+                "parameter": [
+                    {
+                        "type": "INTEGER",
+                        "key": "dataLayerVersion",
+                        "value": "2"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "setDefaultValue",
+                        "value": "false"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "name",
+                        "value": "ad_storage"
+                    }
+                ],
+                "fingerprint": "1772215630040",
+                "formatValue": {}
+            },
+            {
+                "accountId": "4656491844",
+                "containerId": "238248077",
+                "variableId": "121",
+                "name": "dlv - analytics_storage",
+                "type": "v",
+                "parameter": [
+                    {
+                        "type": "INTEGER",
+                        "key": "dataLayerVersion",
+                        "value": "2"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "setDefaultValue",
+                        "value": "false"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "name",
+                        "value": "analytics_storage"
+                    }
+                ],
+                "fingerprint": "1772215651999",
+                "formatValue": {}
+            },
+            {
+                "accountId": "4656491844",
+                "containerId": "238248077",
+                "variableId": "122",
+                "name": "dlv - ad_user_data",
+                "type": "v",
+                "parameter": [
+                    {
+                        "type": "INTEGER",
+                        "key": "dataLayerVersion",
+                        "value": "2"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "setDefaultValue",
+                        "value": "false"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "name",
+                        "value": "ad_user_data"
+                    }
+                ],
+                "fingerprint": "1772215669973",
+                "formatValue": {}
+            },
+            {
+                "accountId": "4656491844",
+                "containerId": "238248077",
+                "variableId": "123",
+                "name": "dlv - ad_personalization",
+                "type": "v",
+                "parameter": [
+                    {
+                        "type": "INTEGER",
+                        "key": "dataLayerVersion",
+                        "value": "2"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "setDefaultValue",
+                        "value": "false"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "name",
+                        "value": "ad_personalization"
+                    }
+                ],
+                "fingerprint": "1772215688111",
+                "formatValue": {}
+            }
+        ],
+        "fingerprint": "1772219596231",
+        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/4656491844/containers/238248077/versions/0?apiLink=version"
+    }
+}

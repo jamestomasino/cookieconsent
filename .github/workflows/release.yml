@@ -1,0 +1,39 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox
+      - run: npm test
+      - name: Create source archive
+        run: |
+          mkdir -p release
+          git archive \
+            --format=tar.gz \
+            --prefix=cookieconsent-${{ github.ref_name }}/ \
+            -o release/cookieconsent-${{ github.ref_name }}.tar.gz \
+            HEAD
+          (cd release && sha256sum cookieconsent-${{ github.ref_name }}.tar.gz > cookieconsent-${{ github.ref_name }}.tar.gz.sha256)
+      - name: Upload GitHub Release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release/cookieconsent-${{ github.ref_name }}.tar.gz
+            release/cookieconsent-${{ github.ref_name }}.tar.gz.sha256

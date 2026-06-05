@@ -171,6 +171,16 @@ You can optionally override storage retention with:
 6. Verify reopening the banner with `.cookie-consent-banner-open`.
 7. Confirm malformed storage is cleared instead of breaking startup.
 
+## Smoke Test
+
+Serve the repo locally or open `smoke-test.html` from the repo root in a browser and click `Run smoke tests`.
+
+The page exercises:
+- Fresh boot banner rendering
+- Legacy storage migration
+- Malformed storage cleanup
+- Public API persistence via `window.cookieconsent.setConsent(selection)`
+
 ## DevTools Verification
 
 Quick checks in browser devtools:

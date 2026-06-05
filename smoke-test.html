@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cookie Consent Smoke Test</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f1ea;
+        --panel: #ffffff;
+        --text: #161616;
+        --muted: #5f5a52;
+        --border: rgba(22, 22, 22, 0.12);
+        --accent: #2457ff;
+        --accent-2: #1b3fc0;
+        --danger: #9b1c1c;
+        --success: #0f7a3d;
+        --shadow: 0 18px 50px rgba(22, 22, 22, 0.14);
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(36, 87, 255, 0.12), transparent 30%),
+          radial-gradient(circle at top right, rgba(15, 122, 61, 0.10), transparent 30%),
+          var(--bg);
+      }
+
+      .page {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+
+      .hero {
+        padding: 28px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.76);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+      }
+
+      p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        min-height: 46px;
+        padding: 0 16px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .primary {
+        color: #fff;
+        background: var(--accent);
+      }
+
+      .primary:hover {
+        background: var(--accent-2);
+      }
+
+      .secondary {
+        color: var(--text);
+        background: #fff;
+        border-color: var(--border);
+      }
+
+      .secondary:hover {
+        background: #f6f6f6;
+      }
+
+      .status {
+        margin-top: 22px;
+        padding: 18px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.84);
+        box-shadow: var(--shadow);
+      }
+
+      .status h2 {
+        margin: 0 0 12px;
+        font-size: 1.1rem;
+      }
+
+      .result-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .result {
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: #fff;
+      }
+
+      .result.pass {
+        border-color: rgba(15, 122, 61, 0.35);
+        background: rgba(15, 122, 61, 0.06);
+      }
+
+      .result.fail {
+        border-color: rgba(155, 28, 28, 0.35);
+        background: rgba(155, 28, 28, 0.06);
+      }
+
+      .result strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .meta {
+        font-size: 0.92rem;
+        color: var(--muted);
+        word-break: break-word;
+      }
+
+      .summary {
+        margin-top: 14px;
+        font-weight: 700;
+      }
+
+      .summary.pass {
+        color: var(--success);
+      }
+
+      .summary.fail {
+        color: var(--danger);
+      }
+
+      .sandbox {
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        border: 0;
+      }
+
+      code {
+        padding: 0.1em 0.35em;
+        border-radius: 6px;
+        background: rgba(22, 22, 22, 0.08);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <h1>Cookie Consent Smoke Test</h1>
+        <p>
+          Runs a few isolated iframe scenarios against <code>cookieconsent.js</code> and reports the results in the browser.
+          Open this file from the repo root so the relative script path resolves.
+        </p>
+        <div class="actions">
+          <button id="run" class="primary" type="button">Run smoke tests</button>
+          <button id="clear" class="secondary" type="button">Clear results</button>
+        </div>
+      </section>
+
+      <section class="status" aria-live="polite">
+        <h2>Results</h2>
+        <div id="results" class="result-list"></div>
+        <div id="summary" class="summary">Idle.</div>
+      </section>
+    </main>
+
+    <script>
+      const COOKIECONSENT_SCRIPT = "./cookieconsent.js";
+      const STORAGE_KEY = "consentMode";
+
+      const scenarios = [
+        {
+          id: "boot-fresh",
+          title: "Fresh boot shows banner",
+          description: "No stored consent should render the banner and leave localStorage empty.",
+          storage: null,
+          assert(state) {
+            return state.bannerVisible === true &&
+              state.storageValue === null &&
+              state.bannerPresent === true;
+          }
+        },
+        {
+          id: "migration",
+          title: "Legacy storage migrates",
+          description: "A raw legacy consent object should be upgraded to the versioned envelope.",
+          storage: {
+            ad_storage: "granted",
+            analytics_storage: "denied",
+            ad_user_data: "granted",
+            ad_personalization: "denied",
+            functionality_storage: "granted",
+            personalization_storage: "denied",
+            security_storage: "granted"
+          },
+          assert(state) {
+            return state.bannerHidden === true &&
+              state.migratedSchemaVersion === 1 &&
+              state.migratedHasEnvelope === true;
+          }
+        },
+        {
+          id: "malformed",
+          title: "Malformed storage is cleared",
+          description: "Invalid JSON should not break startup and should be removed.",
+          storage: "__invalid_json__",
+          assert(state) {
+            return state.bannerVisible === true &&
+              state.storageValue === null &&
+              state.storageCleared === true;
+          }
+        },
+        {
+          id: "interaction",
+          title: "Banner interaction persists consent",
+          description: "Calling the public API should persist consent and hide the banner.",
+          storage: null,
+          interact(stateWindow) {
+            stateWindow.cookieconsent.setConsent({
+              necessary: true,
+              analytics: true,
+              preferences: true,
+              marketing: false,
+              partners: true
+            });
+          },
+          assert(state) {
+            return state.bannerHidden === true &&
+              state.storageValue !== null &&
+              state.persistedSchemaVersion === 1 &&
+              state.persistedSelection.analytics === true &&
+              state.persistedSelection.marketing === false;
+          }
+        }
+      ];
+
+      const resultsEl = document.getElementById("results");
+      const summaryEl = document.getElementById("summary");
+      const runButton = document.getElementById("run");
+      const clearButton = document.getElementById("clear");
+
+      function setSummary(text, pass) {
+        summaryEl.textContent = text;
+        summaryEl.className = "summary " + (pass ? "pass" : "fail");
+      }
+
+      function renderResult(result) {
+        const item = document.createElement("div");
+        item.className = "result " + (result.pass ? "pass" : "fail");
+
+        const title = document.createElement("strong");
+        title.textContent = (result.pass ? "PASS: " : "FAIL: ") + result.title;
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = result.description + " " + (result.details || "");
+
+        item.appendChild(title);
+        item.appendChild(meta);
+        resultsEl.appendChild(item);
+      }
+
+      function clearResults() {
+        resultsEl.textContent = "";
+        setSummary("Idle.", true);
+      }
+
+      function buildScenarioDoc(scenario) {
+        const storageSetup = scenario.storage === null
+          ? "localStorage.removeItem('" + STORAGE_KEY + "');"
+          : scenario.storage === "__invalid_json__"
+            ? "localStorage.setItem('" + STORAGE_KEY + "', '{bad-json');"
+            : "localStorage.setItem('" + STORAGE_KEY + "', JSON.stringify(" + JSON.stringify(scenario.storage) + "));";
+
+        const interactCall = scenario.interact
+          ? "(" + scenario.interact.toString() + ")(window);"
+          : "";
+
+        return [
+          "<!doctype html>",
+          "<html lang=\"en\">",
+          "  <head>",
+          "    <meta charset=\"utf-8\">",
+          "    <title>" + scenario.title.replace(/"/g, "&quot;") + "</title>",
+          "    <script>",
+          "      window.cookieconsentConfig = { gtmId: '' };",
+          "      console.warn = function() {};",
+          "      " + storageSetup,
+          "    </script>",
+          "    <script src=\"" + COOKIECONSENT_SCRIPT + "\"></script>",
+          "  </head>",
+          "  <body>",
+          "    <div class=\"cookie-consent-banner-open\">open</div>",
+          "    <script>",
+          "      function readState() {",
+          "        const banner = document.getElementById('cookie-consent-banner');",
+          "        const stored = localStorage.getItem('" + STORAGE_KEY + "');",
+          "        let parsed = null;",
+          "        try { parsed = stored ? JSON.parse(stored) : null; } catch (e) { parsed = '__parse_error__'; }",
+          "        return {",
+          "          bannerPresent: !!banner,",
+          "          bannerVisible: !!banner && banner.hidden === false && banner.style.display !== 'none',",
+          "          bannerHidden: !!banner && banner.hidden === true,",
+          "          storageValue: stored,",
+          "          parsed: parsed,",
+          "          storageCleared: stored === null,",
+          "          migratedSchemaVersion: parsed && parsed.schemaVersion ? parsed.schemaVersion : null,",
+          "          migratedHasEnvelope: !!(parsed && parsed.consentMode && parsed.schemaVersion),",
+          "          persistedSchemaVersion: parsed && parsed.schemaVersion ? parsed.schemaVersion : null,",
+          "          persistedSelection: parsed && parsed.selection ? parsed.selection : null",
+          "        };",
+          "      }",
+          "      window.addEventListener('load', function() {",
+          "        setTimeout(function() {",
+          interactCall,
+          "          setTimeout(function() {",
+          "            parent.postMessage({",
+          "              type: 'cookieconsent-smoke-result',",
+          "              id: " + JSON.stringify(scenario.id) + ",",
+          "              state: readState()",
+          "            }, '*');",
+          "          }, 50);",
+          "        }, 50);",
+          "      });",
+          "    </script>",
+          "  </body>",
+          "</html>"
+        ].join("\n");
+      }
+
+      function runScenario(scenario) {
+        return new Promise((resolve) => {
+          const frame = document.createElement("iframe");
+          frame.className = "sandbox";
+          frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
+          frame.srcdoc = buildScenarioDoc(scenario);
+          let timeoutId = null;
+
+          function onMessage(event) {
+            if (!event.data || event.data.type !== "cookieconsent-smoke-result" || event.data.id !== scenario.id) {
+              return;
+            }
+
+            if (timeoutId !== null) {
+              clearTimeout(timeoutId);
+            }
+            window.removeEventListener("message", onMessage);
+            frame.remove();
+            resolve(event.data.state);
+          }
+
+          window.addEventListener("message", onMessage);
+          document.body.appendChild(frame);
+
+          timeoutId = setTimeout(() => {
+            window.removeEventListener("message", onMessage);
+            frame.remove();
+            resolve({ timeout: true });
+          }, 5000);
+        }).then((state) => {
+          if (state.timeout) {
+            return {
+              title: scenario.title,
+              description: scenario.description,
+              pass: false,
+              details: "Timed out waiting for scenario result."
+            };
+          }
+
+          let pass = false;
+          try {
+            pass = scenario.assert(state);
+          } catch (e) {
+            pass = false;
+          }
+
+          return {
+            title: scenario.title,
+            description: scenario.description,
+            pass: pass,
+            details: JSON.stringify(state)
+          };
+        });
+      }
+
+      async function runAll() {
+        runButton.disabled = true;
+        clearResults();
+
+        const outcomes = [];
+        for (const scenario of scenarios) {
+          outcomes.push(await runScenario(scenario));
+        }
+
+        outcomes.forEach(renderResult);
+
+        const passed = outcomes.every((result) => result.pass);
+        setSummary(
+          passed ? "All smoke tests passed." : "One or more smoke tests failed.",
+          passed
+        );
+
+        runButton.disabled = false;
+      }
+
+      runButton.addEventListener("click", runAll);
+      clearButton.addEventListener("click", clearResults);
+    </script>
+  </body>
+</html>

@@ -60,6 +60,12 @@ function gtag() { dataLayer.push(arguments); }
 // If false, default-deny applies globally (more conservative, less maintenance).
 const USE_REGION_LIST = true;
 
+// Consent storage uses a small versioned envelope so the schema can evolve
+// without breaking older installs.
+const CONSENT_STORAGE_KEY = 'consentMode';
+const CONSENT_STORAGE_SCHEMA_VERSION = 1;
+const CONSENT_STORAGE_DEFAULT_MAX_AGE_DAYS = 365;
+
 // Regions where consent is required before storing/reading ads/analytics data.
 // Keep this aligned with your legal/compliance requirements.
 const CONSENT_REGION_LIST = [
@@ -82,20 +88,21 @@ const DEFAULT_CONSENT = {
 
 // Banner markup is injected dynamically so it can be reused site-wide.
 const COOKIE_CONSENT_BANNER_DOM = `
-  <div id="cookie-consent-banner" class="cookie-consent-banner">
-    <h3>This website uses cookies</h3>
-    <p>We use cookies to personalise content and ads, to provide social media features and to analyse our traffic. We also share information about your use of our site with our social media, advertising and analytics partners who may combine it with other information that you’ve provided to them or that they’ve collected from your use of their services.</p>
-    <div class="cookie-consent-options">
-      <label><input id="consent-necessary" type="checkbox" value="Necessary" checked disabled>Necessary</label>
-      <label><input id="consent-analytics" type="checkbox" value="Analytics" checked>Analytics</label>
-      <label><input id="consent-marketing" type="checkbox" value="Marketing" checked>Marketing</label>
-      <label><input id="consent-preferences" type="checkbox" value="Preferences" checked>Preferences</label>
-      <label><input id="consent-partners" type="checkbox" value="Partners">Partners</label>
-    </div>
-    <div class="cookie-consent-buttons">
-      <button id="cookie-consent-btn-reject-all" class="cookie-consent-button btn-grayscale">Reject All</button>
-      <button id="cookie-consent-btn-accept-some" class="cookie-consent-button btn-outline">Accept Selection</button>
-      <button id="cookie-consent-btn-accept-all" class="cookie-consent-button btn-success">Accept All</button>
+  <div id="cookie-consent-banner" class="cookie-consent-banner" role="dialog" aria-modal="true" aria-labelledby="cookie-consent-title" aria-describedby="cookie-consent-description" tabindex="-1" hidden>
+    <h3 id="cookie-consent-title">This website uses cookies</h3>
+    <p id="cookie-consent-description">We use cookies to personalise content and ads, to provide social media features and to analyse our traffic. We also share information about your use of our site with our social media, advertising and analytics partners who may combine it with other information that you've provided to them or that they've collected from your use of their services.</p>
+    <fieldset class="cookie-consent-options">
+      <legend class="cookie-consent-legend">Choose which categories to allow</legend>
+      <label class="cookie-consent-label--disabled" for="consent-necessary"><input id="consent-necessary" type="checkbox" value="Necessary" checked disabled>Necessary</label>
+      <label for="consent-analytics"><input id="consent-analytics" type="checkbox" value="Analytics" checked>Analytics</label>
+      <label for="consent-marketing"><input id="consent-marketing" type="checkbox" value="Marketing" checked>Marketing</label>
+      <label for="consent-preferences"><input id="consent-preferences" type="checkbox" value="Preferences" checked>Preferences</label>
+      <label for="consent-partners"><input id="consent-partners" type="checkbox" value="Partners">Partners</label>
+    </fieldset>
+    <div class="cookie-consent-buttons" role="group" aria-label="Cookie consent actions">
+      <button id="cookie-consent-btn-reject-all" type="button" class="cookie-consent-button btn-grayscale">Reject All</button>
+      <button id="cookie-consent-btn-accept-some" type="button" class="cookie-consent-button btn-outline">Accept Selection</button>
+      <button id="cookie-consent-btn-accept-all" type="button" class="cookie-consent-button btn-success">Accept All</button>
     </div>
   </div>
 `;
@@ -126,6 +133,7 @@ let cookieConsentBanner = null;
 let cookieConsentInitialized = false;
 let gtmLoaderPromise = null;
 let missingGtmIdWarned = false;
+let lastFocusedElement = null;
 
 /**
  * Cached banner element references used across handlers to avoid repeated queries.
@@ -152,11 +160,8 @@ let cookieConsentElements = null;
  * @returns {ConsentModeState|null} Parsed consent state, or null when unavailable/invalid.
  */
 function getStoredConsent() {
-  try {
-    return JSON.parse(localStorage.getItem('consentMode'));
-  } catch (e) {
-    return null;
-  }
+  const record = getStoredConsentRecord();
+  return record ? record.consentMode : null;
 }
 
 /**
@@ -180,10 +185,263 @@ function normalizeConsentForUpdate(consent) {
   };
 
   Object.keys(normalized).forEach((key) => {
-    if (consent[key]) normalized[key] = consent[key];
+    if (consent[key] === 'granted' || consent[key] === 'denied') {
+      normalized[key] = consent[key];
+    }
   });
 
   return normalized;
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is ConsentSelection}
+ */
+function isConsentSelection(value) {
+  return !!value &&
+    typeof value === 'object' &&
+    typeof value.necessary === 'boolean' &&
+    typeof value.analytics === 'boolean' &&
+    typeof value.preferences === 'boolean' &&
+    typeof value.marketing === 'boolean' &&
+    typeof value.partners === 'boolean';
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is ConsentModeState}
+ */
+function isConsentModeState(value) {
+  if (!value || typeof value !== 'object') return false;
+
+  return [
+    'ad_storage',
+    'analytics_storage',
+    'ad_user_data',
+    'ad_personalization',
+    'functionality_storage',
+    'personalization_storage',
+    'security_storage'
+  ].every((key) => value[key] === 'granted' || value[key] === 'denied');
+}
+
+/**
+ * @returns {number}
+ */
+function getConsentStorageMaxAgeMs() {
+  const configValue = window.cookieconsentConfig && Number(window.cookieconsentConfig.consentStorageMaxAgeDays);
+  const maxAgeDays = Number.isFinite(configValue) && configValue > 0
+    ? configValue
+    : CONSENT_STORAGE_DEFAULT_MAX_AGE_DAYS;
+  return maxAgeDays * 24 * 60 * 60 * 1000;
+}
+
+/**
+ * @param {string} key
+ * @returns {string|null}
+ */
+function safeLocalStorageGet(key) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * @param {string} key
+ * @param {string} value
+ * @returns {boolean}
+ */
+function safeLocalStorageSet(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * @param {string} key
+ */
+function safeLocalStorageRemove(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch (e) {
+    // Ignore storage failures; consent handling must remain functional.
+  }
+}
+
+/**
+ * @param {ConsentSelection} selection
+ * @returns {ConsentModeState}
+ */
+function mapSelectionToConsentMode(selection) {
+  return {
+    'ad_storage': (selection.marketing && !dnt()) ? 'granted' : 'denied',
+    'analytics_storage': (selection.analytics && !dnt()) ? 'granted' : 'denied',
+    'ad_user_data': (selection.marketing && !dnt()) ? 'granted' : 'denied',
+    'ad_personalization': (selection.partners && !gpc()) ? 'granted' : 'denied',
+    'functionality_storage': selection.necessary ? 'granted' : 'denied',
+    'personalization_storage': selection.preferences ? 'granted' : 'denied',
+    'security_storage': selection.necessary ? 'granted' : 'denied',
+  };
+}
+
+/**
+ * @param {ConsentModeState} consentMode
+ * @param {ConsentSelection|null} selection
+ * @param {string} source
+ * @returns {object}
+ */
+function buildConsentRecord(consentMode, selection, source) {
+  const now = new Date().toISOString();
+  return {
+    schemaVersion: CONSENT_STORAGE_SCHEMA_VERSION,
+    createdAt: now,
+    updatedAt: now,
+    source,
+    expiresAt: new Date(Date.now() + getConsentStorageMaxAgeMs()).toISOString(),
+    consentMode,
+    selection: selection || null
+  };
+}
+
+/**
+ * @param {unknown} rawRecord
+ * @returns {{
+ *   schemaVersion: number,
+ *   createdAt: string,
+ *   updatedAt: string,
+ *   source: string,
+ *   expiresAt: string | null,
+ *   consentMode: ConsentModeState,
+ *   selection: ConsentSelection | null,
+ *   migrated: boolean
+ * } | null}
+ */
+function normalizeStoredConsentRecord(rawRecord) {
+  if (!rawRecord || typeof rawRecord !== 'object') return null;
+
+  if (rawRecord.schemaVersion === CONSENT_STORAGE_SCHEMA_VERSION && isConsentModeState(rawRecord.consentMode)) {
+    if (rawRecord.expiresAt != null && typeof rawRecord.expiresAt !== 'string') {
+      return null;
+    }
+
+    if (rawRecord.expiresAt && typeof rawRecord.expiresAt === 'string') {
+      const expiresAt = Date.parse(rawRecord.expiresAt);
+      if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) {
+        return null;
+      }
+    }
+
+    const createdAt = typeof rawRecord.createdAt === 'string' ? rawRecord.createdAt : new Date().toISOString();
+    const updatedAt = typeof rawRecord.updatedAt === 'string' ? rawRecord.updatedAt : createdAt;
+
+    return {
+      schemaVersion: CONSENT_STORAGE_SCHEMA_VERSION,
+      createdAt,
+      updatedAt,
+      source: typeof rawRecord.source === 'string' ? rawRecord.source : 'stored',
+      expiresAt: typeof rawRecord.expiresAt === 'string' ? rawRecord.expiresAt : null,
+      consentMode: normalizeConsentForUpdate(rawRecord.consentMode),
+      selection: isConsentSelection(rawRecord.selection) ? rawRecord.selection : null,
+      migrated: false
+    };
+  }
+
+  if (isConsentModeState(rawRecord)) {
+    return {
+      schemaVersion: CONSENT_STORAGE_SCHEMA_VERSION,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      source: 'legacy',
+      expiresAt: null,
+      consentMode: normalizeConsentForUpdate(rawRecord),
+      selection: null,
+      migrated: true
+    };
+  }
+
+  return null;
+}
+
+/**
+ * @param {boolean} [allowMigration=true]
+ * @returns {{
+ *   schemaVersion: number,
+ *   createdAt: string,
+ *   updatedAt: string,
+ *   source: string,
+ *   expiresAt: string | null,
+ *   consentMode: ConsentModeState,
+ *   selection: ConsentSelection | null,
+ *   migrated: boolean
+ * } | null}
+ */
+function readStoredConsentRecord(allowMigration = true) {
+  const raw = safeLocalStorageGet(CONSENT_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    const normalized = normalizeStoredConsentRecord(parsed);
+
+    if (!normalized) {
+      safeLocalStorageRemove(CONSENT_STORAGE_KEY);
+      return null;
+    }
+
+    if (normalized.migrated && allowMigration) {
+      persistConsentRecord(normalized.consentMode, normalized.selection, 'migration');
+    }
+
+    return normalized;
+  } catch (e) {
+    safeLocalStorageRemove(CONSENT_STORAGE_KEY);
+    return null;
+  }
+}
+
+/**
+ * @returns {{
+ *   schemaVersion: number,
+ *   createdAt: string,
+ *   updatedAt: string,
+ *   source: string,
+ *   expiresAt: string | null,
+ *   consentMode: ConsentModeState,
+ *   selection: ConsentSelection | null,
+ *   migrated: boolean
+ * } | null}
+ */
+function getStoredConsentRecord() {
+  return readStoredConsentRecord(true);
+}
+
+/**
+ * @param {ConsentModeState} consentMode
+ * @param {ConsentSelection|null} selection
+ * @param {string} source
+ */
+function persistConsentRecord(consentMode, selection, source) {
+  const previous = readStoredConsentRecord(false);
+  const record = previous
+    ? {
+        schemaVersion: CONSENT_STORAGE_SCHEMA_VERSION,
+        createdAt: previous.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        source,
+        expiresAt: new Date(Date.now() + getConsentStorageMaxAgeMs()).toISOString(),
+        consentMode,
+        selection: selection || previous.selection || null
+      }
+    : buildConsentRecord(consentMode, selection, source);
+
+  if (!safeLocalStorageSet(CONSENT_STORAGE_KEY, JSON.stringify(record))) {
+    // Storage is best-effort. Consent still applies in-memory.
+  }
 }
 
 /** @returns {boolean} */
@@ -255,15 +513,9 @@ function pushConsentUpdatedEvent(consentMode) {
  * @param {ConsentSelection} consent
  */
 function setConsent(consent) {
-  const consentMode = {
-    'ad_storage': (consent.marketing && !dnt()) ? 'granted' : 'denied',
-    'analytics_storage': (consent.analytics && !dnt()) ? 'granted' : 'denied',
-    'ad_user_data': (consent.marketing && !dnt()) ? 'granted' : 'denied',
-    'ad_personalization': (consent.partners && !gpc()) ? 'granted' : 'denied',
-    'functionality_storage': consent.necessary ? 'granted' : 'denied',
-    'personalization_storage': consent.preferences ? 'granted' : 'denied',
-    'security_storage': consent.necessary ? 'granted' : 'denied',
-  };
+  if (!isConsentSelection(consent)) return;
+
+  const consentMode = mapSelectionToConsentMode(consent);
 
   window.cookieconsent.consentMode = consentMode;
   gtag('consent', 'update', consentMode);
@@ -271,7 +523,7 @@ function setConsent(consent) {
     pushConsentUpdatedEvent(consentMode);
   }, 50);
   gtag('set', 'ads_data_redaction', consentMode.ad_storage === 'denied');
-  localStorage.setItem('consentMode', JSON.stringify(consentMode));
+  persistConsentRecord(consentMode, consent, 'user_action');
 }
 
 /* ---------------------------
@@ -297,12 +549,28 @@ function showBanner() {
     cookieConsentElements.partners.checked = (cm.ad_personalization == 'granted');
   }
 
+  lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  cookieConsentBanner.hidden = false;
   cookieConsentBanner.style.display = 'flex';
+  cookieConsentBanner.setAttribute('aria-hidden', 'false');
+  window.setTimeout(() => {
+    const focusTarget = cookieConsentElements.rejectAllButton || cookieConsentBanner;
+    if (focusTarget && typeof focusTarget.focus === 'function') {
+      focusTarget.focus();
+    }
+  }, 0);
 }
 
-function hideBanner() {
+function hideBanner(restoreFocus = true) {
   if (!cookieConsentBanner) return;
+  cookieConsentBanner.hidden = true;
   cookieConsentBanner.style.display = 'none';
+  cookieConsentBanner.setAttribute('aria-hidden', 'true');
+  if (restoreFocus && lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+    window.setTimeout(() => {
+      lastFocusedElement.focus();
+    }, 0);
+  }
 }
 
 /** @returns {ConsentSelection} */
@@ -326,6 +594,33 @@ function applySelectionAndClose(selection) {
   hideBanner();
 }
 
+/**
+ * @param {KeyboardEvent} event
+ */
+function handleBannerKeydown(event) {
+  if (!cookieConsentBanner || cookieConsentBanner.hidden) return;
+
+  if (event.key === 'Tab') {
+    const focusableElements = Array.from(cookieConsentBanner.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    )).filter((element) => element instanceof HTMLElement);
+
+    if (!focusableElements.length) return;
+
+    const first = /** @type {HTMLElement} */ (focusableElements[0]);
+    const last = /** @type {HTMLElement} */ (focusableElements[focusableElements.length - 1]);
+    const activeElement = document.activeElement;
+
+    if (event.shiftKey && activeElement === first) {
+      last.focus();
+      event.preventDefault();
+    } else if (!event.shiftKey && activeElement === last) {
+      first.focus();
+      event.preventDefault();
+    }
+  }
+}
+
 /* ---------------------------
  * Banner Initialization
  * --------------------------- */
@@ -339,15 +634,17 @@ function initCookieConsentBanner() {
   if (!cookieConsentBanner) return;
 
   cookieConsentElements = {
-    necessary: cookieConsentBanner.querySelector('#consent-necessary'),
-    analytics: cookieConsentBanner.querySelector('#consent-analytics'),
-    preferences: cookieConsentBanner.querySelector('#consent-preferences'),
-    marketing: cookieConsentBanner.querySelector('#consent-marketing'),
-    partners: cookieConsentBanner.querySelector('#consent-partners'),
-    acceptAllButton: cookieConsentBanner.querySelector('#cookie-consent-btn-accept-all'),
-    acceptSomeButton: cookieConsentBanner.querySelector('#cookie-consent-btn-accept-some'),
-    rejectAllButton: cookieConsentBanner.querySelector('#cookie-consent-btn-reject-all')
+    necessary: /** @type {HTMLInputElement} */ (cookieConsentBanner.querySelector('#consent-necessary')),
+    analytics: /** @type {HTMLInputElement} */ (cookieConsentBanner.querySelector('#consent-analytics')),
+    preferences: /** @type {HTMLInputElement} */ (cookieConsentBanner.querySelector('#consent-preferences')),
+    marketing: /** @type {HTMLInputElement} */ (cookieConsentBanner.querySelector('#consent-marketing')),
+    partners: /** @type {HTMLInputElement} */ (cookieConsentBanner.querySelector('#consent-partners')),
+    acceptAllButton: /** @type {HTMLButtonElement} */ (cookieConsentBanner.querySelector('#cookie-consent-btn-accept-all')),
+    acceptSomeButton: /** @type {HTMLButtonElement} */ (cookieConsentBanner.querySelector('#cookie-consent-btn-accept-some')),
+    rejectAllButton: /** @type {HTMLButtonElement} */ (cookieConsentBanner.querySelector('#cookie-consent-btn-reject-all'))
   };
+
+  cookieConsentBanner.addEventListener('keydown', handleBannerKeydown);
 
   Array.from(document.querySelectorAll('.cookie-consent-banner-open')).forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -355,8 +652,8 @@ function initCookieConsentBanner() {
     });
   });
 
-  if (window.localStorage.getItem('consentMode')) {
-    hideBanner();
+  if (getStoredConsent()) {
+    hideBanner(false);
   } else {
     showBanner();
   }
@@ -408,8 +705,9 @@ gtag('set', 'url_passthrough', true);
 
 if (USE_REGION_LIST) {
   gtag('consent', 'default', Object.assign({}, DEFAULT_CONSENT, { region: CONSENT_REGION_LIST }));
+} else {
+  gtag('consent', 'default', DEFAULT_CONSENT);
 }
-gtag('consent', 'default', DEFAULT_CONSENT);
 gtag('set', 'ads_data_redaction', true);
 
 const normalizedStoredConsent = normalizeConsentForUpdate(getStoredConsent());
@@ -420,6 +718,7 @@ if (normalizedStoredConsent) {
 
 const consentModeForBootEvent = normalizedStoredConsent || normalizeConsentForUpdate(DEFAULT_CONSENT);
 if (consentModeForBootEvent) {
+  window.cookieconsent.consentMode = consentModeForBootEvent;
   window.setTimeout(() => {
     pushConsentUpdatedEvent(consentModeForBootEvent);
   }, 0);

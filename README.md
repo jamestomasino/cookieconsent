@@ -1,5 +1,5 @@
 # Cookie Consent Mode V2 For Google Tags
-[![CalVer 2026.02.27](https://img.shields.io/badge/CalVer-2026.02.27-0A66C2)](#)
+[![SemVer 1.0.0](https://img.shields.io/badge/SemVer-1.0.0-0A66C2)](#)
 
 Dependency-free consent banner that integrates with Google Consent Mode V2 and can optionally load GTM after consent defaults are in place.
 
@@ -192,9 +192,10 @@ npm test
 That command runs the static repository verifier, the runtime consent harness, and `node --check` on `cookieconsent.js`.
 It also runs the Playwright browser suite against the real banner in a headless Chromium session.
 
-If Chromium is not installed locally yet, run `npx playwright install chromium` once before `npm test`.
+If Chromium and Firefox are not installed locally yet, run `npx playwright install chromium firefox` once before `npm test`.
 
 CI is defined in [`.github/workflows/ci.yml`](/mnt/data/personal/cookieconsent/.github/workflows/ci.yml).
+Tagged releases also publish a source tarball from [`.github/workflows/release.yml`](/mnt/data/personal/cookieconsent/.github/workflows/release.yml).
 
 ## DevTools Verification
 

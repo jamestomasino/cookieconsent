@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node scripts/verify.mjs && node scripts/runtime-tests.mjs && node --check cookieconsent.js"
+    "test": "node scripts/verify.mjs && node scripts/runtime-tests.mjs && playwright test && node --check cookieconsent.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "playwright": "^1.60.0"
   }
 }

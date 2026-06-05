@@ -190,6 +190,9 @@ npm test
 ```
 
 That command runs the static repository verifier, the runtime consent harness, and `node --check` on `cookieconsent.js`.
+It also runs the Playwright browser suite against the real banner in a headless Chromium session.
+
+If Chromium is not installed locally yet, run `npx playwright install chromium` once before `npm test`.
 
 CI is defined in [`.github/workflows/ci.yml`](/mnt/data/personal/cookieconsent/.github/workflows/ci.yml).
 

@@ -181,6 +181,18 @@ The page exercises:
 - Malformed storage cleanup
 - Public API persistence via `window.cookieconsent.setConsent(selection)`
 
+## Automation
+
+Run the repo checks with:
+
+```bash
+npm test
+```
+
+That command runs the static repository verifier, the runtime consent harness, and `node --check` on `cookieconsent.js`.
+
+CI is defined in [`.github/workflows/ci.yml`](/mnt/data/personal/cookieconsent/.github/workflows/ci.yml).
+
 ## DevTools Verification
 
 Quick checks in browser devtools:

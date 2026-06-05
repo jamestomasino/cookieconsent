@@ -1,0 +1,9 @@
+{
+  "name": "cookieconsent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/verify.mjs && node scripts/runtime-tests.mjs && node --check cookieconsent.js"
+  }
+}

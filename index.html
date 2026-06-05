@@ -1,24 +1,261 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="shrink-to-fit=no,width=device-width,height=device-height,initial-scale=1,user-scalable=1">
-    <title>Test Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cookie Consent Demo</title>
+    <meta name="description" content="Demo page for the Cookie Consent banner and Google Consent Mode bootstrap.">
 
-    <link rel="stylesheet preload prefetch" href="cookieconsent.css" as="style" type="text/css" crossorigin="anonymous">
+    <link rel="stylesheet" href="cookieconsent.css" type="text/css">
 
-    <!-- Configure GTM container ID for cookieconsent.js -->
     <script>
       window.cookieconsentConfig = {
         gtmId: 'GTM-PT6WQ6HK'
       };
     </script>
 
-    <!-- Consent manager sets consent defaults, then loads GTM using the configured ID -->
     <script src="cookieconsent.js"></script>
+
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4efe6;
+        --panel: rgba(255, 255, 255, 0.78);
+        --panel-border: rgba(22, 22, 22, 0.12);
+        --text: #151515;
+        --muted: #605950;
+        --accent: #2457ff;
+        --accent-2: #1b3fc0;
+        --shadow: 0 18px 50px rgba(22, 22, 22, 0.14);
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(36, 87, 255, 0.12), transparent 28%),
+          radial-gradient(circle at top right, rgba(15, 122, 61, 0.10), transparent 28%),
+          linear-gradient(180deg, #f7f3ec 0%, var(--bg) 100%);
+      }
+
+      .page {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+
+      .hero,
+      .demo-panel,
+      .notes {
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--panel-border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 32px;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 4vw, 3.35rem);
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+      }
+
+      p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        gap: 20px;
+        margin-top: 22px;
+        grid-template-columns: 1.15fr 0.85fr;
+      }
+
+      .demo-panel,
+      .notes {
+        padding: 22px;
+      }
+
+      .demo-panel h2,
+      .notes h2 {
+        margin: 0 0 12px;
+        font-size: 1.1rem;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        min-height: 46px;
+        padding: 0 16px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+      }
+
+      .button:hover {
+        transform: translateY(-1px);
+      }
+
+      .button.primary {
+        color: #fff;
+        background: var(--accent);
+      }
+
+      .button.primary:hover {
+        background: var(--accent-2);
+      }
+
+      .button.secondary {
+        color: var(--text);
+        background: #fff;
+        border-color: var(--panel-border);
+      }
+
+      .button.secondary:hover {
+        background: #f6f6f6;
+      }
+
+      .state {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .state pre {
+        margin: 0;
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.84);
+        border: 1px solid var(--panel-border);
+        overflow: auto;
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
+      .notes ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .notes li + li {
+        margin-top: 10px;
+      }
+
+      code {
+        padding: 0.1em 0.35em;
+        border-radius: 6px;
+        background: rgba(22, 22, 22, 0.08);
+      }
+
+      @media (max-width: 860px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
 
   <body>
-    <div class="cookie-consent-banner-open">[Open Cookie Prefs]</div>
+    <main class="page">
+      <section class="hero">
+        <h1>Cookie Consent Demo</h1>
+        <p>
+          This page demonstrates the config-based bootstrap flow:
+          <code>window.cookieconsentConfig</code>, then <code>cookieconsent.js</code>,
+          then the banner and Consent Mode defaults.
+        </p>
+        <div class="actions">
+          <button id="open-banner" class="button primary" type="button">Open cookie preferences</button>
+          <button id="reset-consent" class="button secondary" type="button">Reset stored consent</button>
+        </div>
+      </section>
+
+      <section class="grid" aria-label="Demo content">
+        <div class="demo-panel">
+          <h2>Runtime state</h2>
+          <p>
+            Use the controls to open the banner, clear consent storage, and inspect the current
+            consent record in the page.
+          </p>
+          <div class="state">
+            <pre id="status">Loading…</pre>
+          </div>
+        </div>
+
+        <aside class="notes">
+          <h2>What this demo covers</h2>
+          <ul>
+            <li>Consent defaults boot before other tags.</li>
+            <li>GTM is loaded only when a container ID is configured.</li>
+            <li>The banner can be reopened with the public API.</li>
+            <li>Stored consent is visible in <code>localStorage['consentMode']</code>.</li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const statusEl = document.getElementById('status');
+      const openBannerButton = document.getElementById('open-banner');
+      const resetConsentButton = document.getElementById('reset-consent');
+
+      function readStoredConsent() {
+        const raw = localStorage.getItem('consentMode');
+        if (!raw) return null;
+        try {
+          return JSON.parse(raw);
+        } catch (error) {
+          return { parseError: true, raw };
+        }
+      }
+
+      function refreshStatus() {
+        const consent = readStoredConsent();
+        const api = window.cookieconsent || {};
+        statusEl.textContent = JSON.stringify({
+          bannerPresent: !!document.getElementById('cookie-consent-banner'),
+          bannerVisible: !!document.getElementById('cookie-consent-banner') &&
+            !document.getElementById('cookie-consent-banner').hidden,
+          consentMode: api.consentMode || null,
+          storedConsent: consent,
+          gtmConfigured: !!(window.cookieconsentConfig && window.cookieconsentConfig.gtmId)
+        }, null, 2);
+      }
+
+      openBannerButton.addEventListener('click', () => {
+        window.cookieconsent.show();
+        refreshStatus();
+      });
+
+      resetConsentButton.addEventListener('click', () => {
+        localStorage.removeItem('consentMode');
+        window.cookieconsent.show();
+        refreshStatus();
+      });
+
+      window.addEventListener('storage', refreshStatus);
+      window.addEventListener('load', () => {
+        refreshStatus();
+        window.setInterval(refreshStatus, 500);
+      });
+    </script>
   </body>
 </html>

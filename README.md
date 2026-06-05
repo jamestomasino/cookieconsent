@@ -227,6 +227,10 @@ document.querySelector('script[data-gtm-loader]')
   - Confirm `window.cookieconsentConfig.gtmId` (or `window.COOKIECONSENT_GTM_ID`) is defined before `cookieconsent.js`.
   - Confirm no CSP rule blocks `https://www.googletagmanager.com`.
 
+## Planned Improvement
+
+- Add a UI state for categories that are effectively unavailable because `Do Not Track` or `Global Privacy Control` is enabled, likely by disabling those controls and labeling why the choice cannot be applied as selected.
+
 ## Compliance Note
 
 This implementation provides technical controls for consent signaling and regional scoping.

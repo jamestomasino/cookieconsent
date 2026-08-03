@@ -181,7 +181,7 @@ test('GPC signal shows notice, locks toggles, and denies all data collection', a
       id,
       checked: document.getElementById(id).checked,
       disabled: document.getElementById(id).disabled,
-      gpcLocked: document.getElementById(id).getAttribute('data-gpc-locked')
+      gpcLocked: document.getElementById(id).getAttribute('data-privacy-locked')
     }));
   });
 
@@ -198,11 +198,14 @@ test('GPC signal shows notice, locks toggles, and denies all data collection', a
   // Reject All button remains visible for dismissal
   await expect(page.locator('#cookie-consent-btn-reject-all')).toBeVisible();
 
-  // Options fieldset is hidden
-  const optionsHidden = await page.evaluate(() => {
+  // GPC notice is visible (outside the fieldset, between it and buttons)
+  await expect(page.locator('#gpc-notice')).toBeVisible();
+
+  // Fieldset is hidden (GPC notice replaces it visually)
+  const fieldsetHidden = await page.evaluate(() => {
     return document.querySelector('.cookie-consent-options').hasAttribute('hidden');
   });
-  expect(optionsHidden).toBe(true);
+  expect(fieldsetHidden).toBe(true);
 
   // Consent mode defaults remain denied
   const consentDefaults = await page.evaluate(() => {
@@ -227,6 +230,88 @@ test('GPC user can close banner with Reject All and consent persists as denied',
   await page.goto('/');
 
   await expect(page.locator('#gpc-notice')).toBeVisible();
+
+  // User clicks Reject All to close
+  await page.locator('#cookie-consent-btn-reject-all').click();
+
+  await expect(page.locator('#cookie-consent-banner')).toBeHidden();
+
+  // Stored consent is all denied (except necessary storage)
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('consentMode')));
+  expect(stored.consentMode).toMatchObject({
+    ad_storage: 'denied',
+    analytics_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    functionality_storage: 'granted',
+    personalization_storage: 'denied',
+    security_storage: 'granted'
+  });
+  expect(stored.source).toBe('user_action');
+});
+
+test('DNT signal shows notice, locks toggles, and denies all data collection', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'doNotTrack', {
+      get: () => '1',
+      configurable: true
+    });
+  });
+  await page.goto('/');
+
+  const banner = page.locator('#cookie-consent-banner');
+  const dntNotice = page.locator('#dnt-notice');
+
+  // Banner is visible with DNT notice shown
+  await expect(banner).toBeVisible();
+  await expect(dntNotice).toBeVisible();
+
+  // API reports DNT active
+  const dntActive = await page.evaluate(() => window.cookieconsent.dntActive);
+  expect(dntActive).toBe(true);
+
+  // GPC notice should NOT be visible (only DNT)
+  await expect(page.locator('#gpc-notice')).toBeHidden();
+
+  // Non-necessary checkboxes are unchecked and disabled
+  const toggles = await page.evaluate(() => {
+    const ids = ['consent-analytics', 'consent-marketing', 'consent-preferences', 'consent-partners'];
+    return ids.map((id) => ({
+      id,
+      checked: document.getElementById(id).checked,
+      disabled: document.getElementById(id).disabled
+    }));
+  });
+
+  for (const toggle of toggles) {
+    expect(toggle.checked).toBe(false);
+    expect(toggle.disabled).toBe(true);
+  }
+
+  // Accept All and Accept Selection buttons are hidden
+  await expect(page.locator('#cookie-consent-btn-accept-all')).toBeHidden();
+  await expect(page.locator('#cookie-consent-btn-accept-some')).toBeHidden();
+
+  // Reject All button remains visible for dismissal
+  await expect(page.locator('#cookie-consent-btn-reject-all')).toBeVisible();
+
+  // Fieldset is hidden (DNT notice replaces it visually)
+  const fieldsetHidden = await page.evaluate(() => {
+    return document.querySelector('.cookie-consent-options').hasAttribute('hidden');
+  });
+  expect(fieldsetHidden).toBe(true);
+});
+
+test('DNT user can close banner with Reject All and consent persists as denied', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'doNotTrack', {
+      get: () => '1',
+      configurable: true
+    });
+  });
+  await page.goto('/');
+
+  await expect(page.locator('#dnt-notice')).toBeVisible();
 
   // User clicks Reject All to close
   await page.locator('#cookie-consent-btn-reject-all').click();

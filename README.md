@@ -121,11 +121,20 @@ DNT/GPC can force denial for related fields.
 
 When a browser sends a GPC signal (`navigator.globalPrivacyControl`), the banner:
 - Displays a GPC notice informing the user that data collection has been disabled.
-- Locks all non-necessary consent toggles (unchecked and disabled).
-- Disables "Accept All" and "Accept Selection" buttons; only "Reject All" remains active.
+- Hides the checkbox options fieldset; the notice takes its visual place.
+- Hides "Accept All" and "Accept Selection" buttons; only "Reject All" remains for dismissal.
 - Keeps consent defaults at deny-all (the boot sequence already applies conservative defaults).
 
 The public API exposes `window.cookieconsent.gpcActive` (boolean) so pages can react to GPC state.
+
+## Do Not Track (DNT)
+
+The same compact banner behavior applies when a browser sends a DNT signal (`navigator.doNotTrack` or `window.doNotTrack`).
+A DNT-specific notice is displayed in the same visual position as the GPC notice.
+
+The public API exposes `window.cookieconsent.dntActive` (boolean) so pages can react to DNT state.
+
+When both GPC and DNT are active, GPC takes precedence.
 
 ## Storage
 
@@ -255,3 +264,5 @@ Tip: `index.html` in this repo demonstrates the config-based flow.
 ![Sample of the Cookie Banner](sample.png)
 
 ![Sample of the GPC Banner](sample-gpc.png)
+
+![Sample of the DNT Banner](sample-dnt.png)

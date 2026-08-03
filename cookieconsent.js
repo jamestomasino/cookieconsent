@@ -89,10 +89,6 @@ const DEFAULT_CONSENT = {
 // Banner markup is injected dynamically so it can be reused site-wide.
 const COOKIE_CONSENT_BANNER_DOM = `
   <div id="cookie-consent-banner" class="cookie-consent-banner" role="dialog" aria-modal="true" aria-labelledby="cookie-consent-title" aria-describedby="cookie-consent-description" tabindex="-1" hidden>
-    <div id="gpc-notice" class="gpc-notice" role="alert" hidden>
-      <span class="gpc-notice-icon">🛡</span>
-      <span>Your browser has sent a <strong>Global Privacy Control</strong> signal. Data collection has been disabled automatically. You may close this notice.</span>
-    </div>
     <h3 id="cookie-consent-title">This website uses cookies</h3>
     <p id="cookie-consent-description">We use cookies to personalise content and ads, to provide social media features and to analyse our traffic. We also share information about your use of our site with our social media, advertising and analytics partners who may combine it with other information that you've provided to them or that they've collected from your use of their services.</p>
     <fieldset class="cookie-consent-options">
@@ -103,6 +99,14 @@ const COOKIE_CONSENT_BANNER_DOM = `
       <label for="consent-preferences"><input id="consent-preferences" type="checkbox" value="Preferences" checked>Preferences</label>
       <label for="consent-partners"><input id="consent-partners" type="checkbox" value="Partners">Partners</label>
     </fieldset>
+    <div id="gpc-notice" class="gpc-notice" role="alert" hidden>
+      <span class="gpc-notice-icon">🛡</span>
+      <span>Your browser has sent a <strong>Global Privacy Control</strong> signal. Data collection has been disabled automatically. You may close this notice.</span>
+    </div>
+    <div id="dnt-notice" class="dnt-notice" role="alert" hidden>
+      <span class="dnt-notice-icon">🛡</span>
+      <span>Your browser has sent a <strong>Do Not Track</strong> signal. Data collection has been disabled automatically. You may close this notice.</span>
+    </div>
     <div class="cookie-consent-buttons" role="group" aria-label="Cookie consent actions">
       <button id="cookie-consent-btn-reject-all" type="button" class="cookie-consent-button btn-grayscale">Reject All</button>
       <button id="cookie-consent-btn-accept-some" type="button" class="cookie-consent-button btn-outline">Accept Selection</button>
@@ -449,7 +453,7 @@ function persistConsentRecord(consentMode, selection, source) {
 }
 
 /* ---------------------------
- * GPC (Global Privacy Control)
+ * Privacy Signals (GPC / DNT)
  * --------------------------- */
 
 /** @returns {boolean} */
@@ -462,9 +466,65 @@ function gpc() {
   return (navigator.globalPrivacyControl || window.globalPrivacyControl);
 }
 
-/* ---------------------------
- * GTM Loading
- * --------------------------- */
+/**
+ * Shared lock logic: hide the checkbox fieldset, show the given notice,
+ * hide Accept All / Accept Selection, and lock all toggles.
+ *
+ * @param {string} noticeId - e.g. '#gpc-notice' or '#dnt-notice'
+ */
+function applyPrivacySignalLock(noticeId) {
+  if (!cookieConsentElements) return;
+
+  const notice = cookieConsentBanner.querySelector(noticeId);
+  if (notice) {
+    notice.hidden = false;
+  }
+
+  // Hide the checkbox options fieldset — privacy notice takes its visual place
+  const optionsFieldset = cookieConsentBanner.querySelector('.cookie-consent-options');
+  if (optionsFieldset) {
+    optionsFieldset.hidden = true;
+  }
+
+  // Hide Accept All and Accept Selection; keep Reject All so the user can dismiss.
+  cookieConsentElements.acceptAllButton.hidden = true;
+  cookieConsentElements.acceptSomeButton.hidden = true;
+
+  // Lock non-necessary checkboxes: unchecked + disabled (for programmatic checks)
+  cookieConsentElements.analytics.checked = false;
+  cookieConsentElements.analytics.disabled = true;
+  cookieConsentElements.preferences.checked = false;
+  cookieConsentElements.preferences.disabled = true;
+  cookieConsentElements.marketing.checked = false;
+  cookieConsentElements.marketing.disabled = true;
+  cookieConsentElements.partners.checked = false;
+  cookieConsentElements.partners.disabled = true;
+
+  // Mark checkboxes as locked for CSS styling
+  [
+    cookieConsentElements.analytics,
+    cookieConsentElements.preferences,
+    cookieConsentElements.marketing,
+    cookieConsentElements.partners
+  ].forEach((input) => {
+    input.setAttribute('aria-disabled', 'true');
+    input.setAttribute('data-privacy-locked', 'true');
+  });
+
+  // Disable Accept All and Accept Selection; only Reject All remains
+  cookieConsentElements.acceptAllButton.disabled = true;
+  cookieConsentElements.acceptAllButton.setAttribute('aria-disabled', 'true');
+  cookieConsentElements.acceptSomeButton.disabled = true;
+  cookieConsentElements.acceptSomeButton.setAttribute('aria-disabled', 'true');
+}
+
+function applyGpcLock() {
+  applyPrivacySignalLock('#gpc-notice');
+}
+
+function applyDntLock() {
+  applyPrivacySignalLock('#dnt-notice');
+}
 
 /**
  * Injects GTM script exactly once for a given GTM container ID.
@@ -538,61 +598,13 @@ function setConsent(consent) {
  * Banner UI Helpers
  * --------------------------- */
 
-/**
- * When GPC is active, lock all non-necessary toggles and show the GPC notice.
- * The user cannot override this — consent stays at deny-all.
- */
-function applyGpcLock() {
-  if (!cookieConsentElements) return;
-
-  const gpcNotice = cookieConsentBanner.querySelector('#gpc-notice');
-  if (gpcNotice) {
-    gpcNotice.hidden = false;
-  }
-
-  // Hide the entire options fieldset — everything is locked anyway,
-  // so this saves vertical space especially on mobile.
-  const optionsFieldset = cookieConsentBanner.querySelector('.cookie-consent-options');
-  if (optionsFieldset) {
-    optionsFieldset.hidden = true;
-  }
-  // Hide Accept All and Accept Selection; keep Reject All so the user can dismiss.
-  cookieConsentElements.acceptAllButton.hidden = true;
-  cookieConsentElements.acceptSomeButton.hidden = true;
-
-  // Lock non-necessary checkboxes: unchecked + disabled (for programmatic checks)
-  cookieConsentElements.analytics.checked = false;
-  cookieConsentElements.analytics.disabled = true;
-  cookieConsentElements.preferences.checked = false;
-  cookieConsentElements.preferences.disabled = true;
-  cookieConsentElements.marketing.checked = false;
-  cookieConsentElements.marketing.disabled = true;
-  cookieConsentElements.partners.checked = false;
-  cookieConsentElements.partners.disabled = true;
-
-  // Mark checkboxes as GPC-locked for CSS styling
-  [
-    cookieConsentElements.analytics,
-    cookieConsentElements.preferences,
-    cookieConsentElements.marketing,
-    cookieConsentElements.partners
-  ].forEach((input) => {
-    input.setAttribute('aria-disabled', 'true');
-    input.setAttribute('data-gpc-locked', 'true');
-  });
-
-  // Disable Accept All and Accept Selection; only Reject All remains
-  cookieConsentElements.acceptAllButton.disabled = true;
-  cookieConsentElements.acceptAllButton.setAttribute('aria-disabled', 'true');
-  cookieConsentElements.acceptSomeButton.disabled = true;
-  cookieConsentElements.acceptSomeButton.setAttribute('aria-disabled', 'true');
-}
-
 function showBanner() {
   if (!cookieConsentBanner || !cookieConsentElements) return;
 
   if (gpc()) {
     applyGpcLock();
+  } else if (dnt()) {
+    applyDntLock();
   } else {
     const cm = getStoredConsent();
     if (cm && cm.functionality_storage) {
@@ -732,9 +744,12 @@ function initCookieConsentBanner() {
     applySelectionAndClose(CONSENT_SELECTION_PRESETS.rejectAll);
   });
 
-  // If GPC is active, show the banner with the GPC notice and locked controls.
-  // Consent defaults are already deny-all at boot, so no further action is needed.
+  // If a privacy signal (GPC or DNT) is active, show the banner with the
+  // corresponding notice and locked controls. Consent defaults are already
+  // deny-all at boot, so no further action is needed.
   if (gpc()) {
+    showBanner();
+  } else if (dnt()) {
     showBanner();
   }
 }
@@ -750,7 +765,8 @@ window.cookieconsent = Object.assign(window.cookieconsent || {}, {
   },
   hide: hideBanner,
   setConsent,
-  gpcActive: gpc()
+  gpcActive: gpc(),
+  dntActive: dnt()
 });
 
 function getConfiguredGtmId() {

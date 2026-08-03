@@ -89,6 +89,10 @@ const DEFAULT_CONSENT = {
 // Banner markup is injected dynamically so it can be reused site-wide.
 const COOKIE_CONSENT_BANNER_DOM = `
   <div id="cookie-consent-banner" class="cookie-consent-banner" role="dialog" aria-modal="true" aria-labelledby="cookie-consent-title" aria-describedby="cookie-consent-description" tabindex="-1" hidden>
+    <div id="gpc-notice" class="gpc-notice" role="alert" hidden>
+      <span class="gpc-notice-icon">🛡</span>
+      <span>Your browser has sent a <strong>Global Privacy Control</strong> signal. Data collection has been disabled automatically. You may close this notice.</span>
+    </div>
     <h3 id="cookie-consent-title">This website uses cookies</h3>
     <p id="cookie-consent-description">We use cookies to personalise content and ads, to provide social media features and to analyse our traffic. We also share information about your use of our site with our social media, advertising and analytics partners who may combine it with other information that you've provided to them or that they've collected from your use of their services.</p>
     <fieldset class="cookie-consent-options">
@@ -444,6 +448,10 @@ function persistConsentRecord(consentMode, selection, source) {
   }
 }
 
+/* ---------------------------
+ * GPC (Global Privacy Control)
+ * --------------------------- */
+
 /** @returns {boolean} */
 function dnt() {
   return (navigator.doNotTrack == '1' || window.doNotTrack == '1');
@@ -530,23 +538,67 @@ function setConsent(consent) {
  * Banner UI Helpers
  * --------------------------- */
 
+/**
+ * When GPC is active, lock all non-necessary toggles and show the GPC notice.
+ * The user cannot override this — consent stays at deny-all.
+ */
+function applyGpcLock() {
+  if (!cookieConsentElements) return;
+
+  const gpcNotice = cookieConsentBanner.querySelector('#gpc-notice');
+  if (gpcNotice) {
+    gpcNotice.hidden = false;
+  }
+
+  // Lock non-necessary checkboxes: unchecked + disabled
+  cookieConsentElements.analytics.checked = false;
+  cookieConsentElements.analytics.disabled = true;
+  cookieConsentElements.preferences.checked = false;
+  cookieConsentElements.preferences.disabled = true;
+  cookieConsentElements.marketing.checked = false;
+  cookieConsentElements.marketing.disabled = true;
+  cookieConsentElements.partners.checked = false;
+  cookieConsentElements.partners.disabled = true;
+
+  // Mark checkboxes as GPC-locked for CSS styling
+  [
+    cookieConsentElements.analytics,
+    cookieConsentElements.preferences,
+    cookieConsentElements.marketing,
+    cookieConsentElements.partners
+  ].forEach((input) => {
+    input.setAttribute('aria-disabled', 'true');
+    input.setAttribute('data-gpc-locked', 'true');
+  });
+
+  // Disable Accept All and Accept Selection; only Reject All remains
+  cookieConsentElements.acceptAllButton.disabled = true;
+  cookieConsentElements.acceptAllButton.setAttribute('aria-disabled', 'true');
+  cookieConsentElements.acceptSomeButton.disabled = true;
+  cookieConsentElements.acceptSomeButton.setAttribute('aria-disabled', 'true');
+}
+
 function showBanner() {
   if (!cookieConsentBanner || !cookieConsentElements) return;
 
-  const cm = getStoredConsent();
-  if (cm && cm.functionality_storage) {
-    if (cm.functionality_storage == 'granted') {
-      cookieConsentElements.necessary.checked = true;
-      cookieConsentElements.necessary.disabled = true;
-    } else {
-      cookieConsentElements.necessary.checked = false;
-      cookieConsentElements.necessary.disabled = false;
-    }
+  if (gpc()) {
+    applyGpcLock();
+  } else {
+    const cm = getStoredConsent();
+    if (cm && cm.functionality_storage) {
+      if (cm.functionality_storage == 'granted') {
+        cookieConsentElements.necessary.checked = true;
+        cookieConsentElements.necessary.disabled = true;
+      } else {
+        cookieConsentElements.necessary.checked = false;
+        cookieConsentElements.necessary.disabled = false;
+      }
 
-    cookieConsentElements.analytics.checked = (cm.analytics_storage == 'granted');
-    cookieConsentElements.preferences.checked = (cm.personalization_storage == 'granted');
-    cookieConsentElements.marketing.checked = (cm.ad_storage == 'granted');
-    cookieConsentElements.partners.checked = (cm.ad_personalization == 'granted');
+      cookieConsentElements.analytics.checked = (cm.analytics_storage == 'granted');
+      cookieConsentElements.preferences.checked = (cm.personalization_storage == 'granted');
+      cookieConsentElements.marketing.checked = (cm.ad_storage == 'granted');
+      cookieConsentElements.partners.checked = (cm.ad_personalization == 'granted');
+    }
   }
 
   lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -669,6 +721,12 @@ function initCookieConsentBanner() {
   cookieConsentElements.rejectAllButton.addEventListener('click', () => {
     applySelectionAndClose(CONSENT_SELECTION_PRESETS.rejectAll);
   });
+
+  // If GPC is active, show the banner with the GPC notice and locked controls.
+  // Consent defaults are already deny-all at boot, so no further action is needed.
+  if (gpc()) {
+    showBanner();
+  }
 }
 
 /* ---------------------------
@@ -681,7 +739,8 @@ window.cookieconsent = Object.assign(window.cookieconsent || {}, {
     showBanner();
   },
   hide: hideBanner,
-  setConsent
+  setConsent,
+  gpcActive: gpc()
 });
 
 function getConfiguredGtmId() {

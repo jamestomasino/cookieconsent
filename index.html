@@ -234,6 +234,7 @@
           bannerPresent: !!document.getElementById('cookie-consent-banner'),
           bannerVisible: !!document.getElementById('cookie-consent-banner') &&
             !document.getElementById('cookie-consent-banner').hidden,
+          gpcActive: api.gpcActive || false,
           consentMode: api.consentMode || null,
           storedConsent: consent,
           gtmConfigured: !!(window.cookieconsentConfig && window.cookieconsentConfig.gtmId)

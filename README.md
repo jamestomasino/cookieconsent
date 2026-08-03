@@ -117,6 +117,16 @@ Selections are mapped to Google Consent Mode keys:
 
 DNT/GPC can force denial for related fields.
 
+## Global Privacy Control (GPC)
+
+When a browser sends a GPC signal (`navigator.globalPrivacyControl`), the banner:
+- Displays a GPC notice informing the user that data collection has been disabled.
+- Locks all non-necessary consent toggles (unchecked and disabled).
+- Disables "Accept All" and "Accept Selection" buttons; only "Reject All" remains active.
+- Keeps consent defaults at deny-all (the boot sequence already applies conservative defaults).
+
+The public API exposes `window.cookieconsent.gpcActive` (boolean) so pages can react to GPC state.
+
 ## Storage
 
 Consent is saved in `localStorage['consentMode']` as a versioned envelope:

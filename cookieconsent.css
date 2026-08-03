@@ -14,6 +14,9 @@
 	--cc-focus: #f0b429;
 	--cc-radius: 16px;
 	--cc-gap: 16px;
+	--cc-gpc-bg: rgba(36, 87, 255, 0.08);
+	--cc-gpc-border: rgba(36, 87, 255, 0.22);
+	--cc-gpc-text: #1a1a2e;
 }
 
 #cookie-consent-banner {
@@ -180,4 +183,46 @@
 	#cookie-consent-banner .cookie-consent-buttons {
 		grid-template-columns: 1fr;
 	}
+}
+
+/* ---------------------------
+ * GPC Notice
+ * --------------------------- */
+
+.gpc-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 14px 16px;
+	margin: 0 0 16px;
+	background: var(--cc-gpc-bg);
+	border: 1px solid var(--cc-gpc-border);
+	border-radius: 12px;
+	color: var(--cc-gpc-text);
+	font-size: 0.92rem;
+	line-height: 1.5;
+}
+
+.gpc-notice[hidden] {
+	display: none !important;
+}
+
+.gpc-notice-icon {
+	flex: 0 0 auto;
+	font-size: 1.2rem;
+	line-height: 1.4;
+}
+
+/* GPC-locked checkboxes */
+#cookie-consent-banner label:has(input[data-gpc-locked="true"]) {
+	opacity: 0.5;
+	cursor: not-allowed;
+	background: rgba(240, 240, 240, 0.6);
+}
+
+/* Disabled buttons under GPC */
+#cookie-consent-banner .cookie-consent-buttons button:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+	transform: none !important;
 }

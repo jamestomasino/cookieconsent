@@ -153,3 +153,90 @@ test('reopening the banner reflects stored consent state', async ({ page }) => {
     partners: false
   });
 });
+
+test('GPC signal shows notice, locks toggles, and denies all data collection', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'globalPrivacyControl', {
+      get: () => true,
+      configurable: true
+    });
+  });
+  await page.goto('/');
+
+  const banner = page.locator('#cookie-consent-banner');
+  const gpcNotice = page.locator('#gpc-notice');
+
+  // Banner is visible with GPC notice shown
+  await expect(banner).toBeVisible();
+  await expect(gpcNotice).toBeVisible();
+
+  // API reports GPC active
+  const gpcActive = await page.evaluate(() => window.cookieconsent.gpcActive);
+  expect(gpcActive).toBe(true);
+
+  // Non-necessary checkboxes are unchecked and disabled (GPC-locked)
+  const toggles = await page.evaluate(() => {
+    const ids = ['consent-analytics', 'consent-marketing', 'consent-preferences', 'consent-partners'];
+    return ids.map((id) => ({
+      id,
+      checked: document.getElementById(id).checked,
+      disabled: document.getElementById(id).disabled,
+      gpcLocked: document.getElementById(id).getAttribute('data-gpc-locked')
+    }));
+  });
+
+  for (const toggle of toggles) {
+    expect(toggle.checked).toBe(false);
+    expect(toggle.disabled).toBe(true);
+    expect(toggle.gpcLocked).toBe('true');
+  }
+
+  // Accept All and Accept Selection buttons are disabled
+  await expect(page.locator('#cookie-consent-btn-accept-all')).toBeDisabled();
+  await expect(page.locator('#cookie-consent-btn-accept-some')).toBeDisabled();
+
+  // Reject All button remains enabled
+  await expect(page.locator('#cookie-consent-btn-reject-all')).toBeEnabled();
+
+  // Consent mode defaults remain denied
+  const consentDefaults = await page.evaluate(() => {
+    return window.dataLayer.filter((entry) => entry[0] === 'consent' && entry[1] === 'default');
+  });
+  expect(consentDefaults).toHaveLength(1);
+  expect(consentDefaults[0][2]).toMatchObject({
+    ad_storage: 'denied',
+    analytics_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied'
+  });
+});
+
+test('GPC user can close banner with Reject All and consent persists as denied', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'globalPrivacyControl', {
+      get: () => true,
+      configurable: true
+    });
+  });
+  await page.goto('/');
+
+  await expect(page.locator('#gpc-notice')).toBeVisible();
+
+  // User clicks Reject All to close
+  await page.locator('#cookie-consent-btn-reject-all').click();
+
+  await expect(page.locator('#cookie-consent-banner')).toBeHidden();
+
+  // Stored consent is all denied (except necessary storage)
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('consentMode')));
+  expect(stored.consentMode).toMatchObject({
+    ad_storage: 'denied',
+    analytics_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    functionality_storage: 'granted',
+    personalization_storage: 'denied',
+    security_storage: 'granted'
+  });
+  expect(stored.source).toBe('user_action');
+});

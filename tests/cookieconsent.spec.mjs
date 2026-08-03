@@ -191,12 +191,18 @@ test('GPC signal shows notice, locks toggles, and denies all data collection', a
     expect(toggle.gpcLocked).toBe('true');
   }
 
-  // Accept All and Accept Selection buttons are disabled
-  await expect(page.locator('#cookie-consent-btn-accept-all')).toBeDisabled();
-  await expect(page.locator('#cookie-consent-btn-accept-some')).toBeDisabled();
+  // Accept All and Accept Selection buttons are hidden
+  await expect(page.locator('#cookie-consent-btn-accept-all')).toBeHidden();
+  await expect(page.locator('#cookie-consent-btn-accept-some')).toBeHidden();
 
-  // Reject All button remains enabled
-  await expect(page.locator('#cookie-consent-btn-reject-all')).toBeEnabled();
+  // Reject All button remains visible for dismissal
+  await expect(page.locator('#cookie-consent-btn-reject-all')).toBeVisible();
+
+  // Options fieldset is hidden
+  const optionsHidden = await page.evaluate(() => {
+    return document.querySelector('.cookie-consent-options').hasAttribute('hidden');
+  });
+  expect(optionsHidden).toBe(true);
 
   // Consent mode defaults remain denied
   const consentDefaults = await page.evaluate(() => {

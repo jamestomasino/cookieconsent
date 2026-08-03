@@ -253,3 +253,5 @@ MIT
 Tip: `index.html` in this repo demonstrates the config-based flow.
 
 ![Sample of the Cookie Banner](sample.png)
+
+![Sample of the GPC Banner](sample-gpc.png)

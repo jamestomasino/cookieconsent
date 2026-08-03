@@ -550,7 +550,17 @@ function applyGpcLock() {
     gpcNotice.hidden = false;
   }
 
-  // Lock non-necessary checkboxes: unchecked + disabled
+  // Hide the entire options fieldset — everything is locked anyway,
+  // so this saves vertical space especially on mobile.
+  const optionsFieldset = cookieConsentBanner.querySelector('.cookie-consent-options');
+  if (optionsFieldset) {
+    optionsFieldset.hidden = true;
+  }
+  // Hide Accept All and Accept Selection; keep Reject All so the user can dismiss.
+  cookieConsentElements.acceptAllButton.hidden = true;
+  cookieConsentElements.acceptSomeButton.hidden = true;
+
+  // Lock non-necessary checkboxes: unchecked + disabled (for programmatic checks)
   cookieConsentElements.analytics.checked = false;
   cookieConsentElements.analytics.disabled = true;
   cookieConsentElements.preferences.checked = false;

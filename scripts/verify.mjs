@@ -25,10 +25,10 @@ const changelog = read('CHANGELOG.md');
 
 assert(license.startsWith('MIT License'), 'LICENSE must be MIT');
 assert(readme.includes('MIT'), 'README must mention MIT');
-assert(packageJson.version === '1.0.0', 'package.json must be version 1.0.0');
-assert(packageLock.version === '1.0.0', 'package-lock.json must be version 1.0.0');
-assert(packageLock.packages && packageLock.packages[''].version === '1.0.0', 'package-lock root package must be version 1.0.0');
-assert(readme.includes('SemVer 1.0.0'), 'README must advertise SemVer 1.0.0');
+assert(packageJson.version === '1.1.0', 'package.json must be version 1.1.0');
+assert(packageLock.version === '1.1.0', 'package-lock.json must be version 1.1.0');
+assert(packageLock.packages && packageLock.packages[''].version === '1.1.0', 'package-lock root package must be version 1.1.0');
+assert(readme.includes('SemVer 1.1.0'), 'README must advertise SemVer 1.1.0');
 assert(readme.includes('schemaVersion: 1'), 'README must document versioned consent storage');
 assert(readme.includes('Smoke Test'), 'README must document the smoke test page');
 assert(changelog.includes('## 1.0.0'), 'CHANGELOG must include the 1.0.0 release section');

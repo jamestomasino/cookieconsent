@@ -753,13 +753,15 @@ function initCookieConsentBanner() {
     applySelectionAndClose(CONSENT_SELECTION_PRESETS.rejectAll);
   });
 
-  // If a privacy signal (GPC or DNT) is active, show the banner with the
-  // corresponding notice and locked controls. Consent defaults are already
-  // deny-all at boot, so no further action is needed.
-  if (gpc()) {
-    showBanner();
-  } else if (dnt()) {
-    showBanner();
+  // If a privacy signal (GPC or DNT) is active and the user has not yet
+  // dismissed the banner, show it with the corresponding notice and locked
+  // controls. Consent defaults are already deny-all at boot.
+  if (!getStoredConsent()) {
+    if (gpc()) {
+      showBanner();
+    } else if (dnt()) {
+      showBanner();
+    }
   }
 }
 

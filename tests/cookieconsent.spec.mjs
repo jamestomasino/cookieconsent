@@ -252,6 +252,42 @@ test('GPC user can close banner with Close and consent persists as denied', asyn
   expect(stored.source).toBe('user_action');
 });
 
+test('GPC banner does not reappear on reload after Close', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'globalPrivacyControl', {
+      get: () => true,
+      configurable: true,
+    });
+  });
+  await page.goto('/');
+
+  // Dismiss with Close
+  await page.locator('#cookie-consent-btn-reject-all').click();
+  await expect(page.locator('#cookie-consent-banner')).toBeHidden();
+
+  // Reload — banner should stay hidden (stored consent prevents it)
+  await page.reload();
+  await expect(page.locator('#cookie-consent-banner')).toBeHidden();
+});
+
+test('DNT banner does not reappear on reload after Close', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'doNotTrack', {
+      get: () => '1',
+      configurable: true,
+    });
+  });
+  await page.goto('/');
+
+  // Dismiss with Close
+  await page.locator('#cookie-consent-btn-reject-all').click();
+  await expect(page.locator('#cookie-consent-banner')).toBeHidden();
+
+  // Reload — banner should stay hidden (stored consent prevents it)
+  await page.reload();
+  await expect(page.locator('#cookie-consent-banner')).toBeHidden();
+});
+
 test('DNT signal shows notice, locks toggles, and denies all data collection', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'doNotTrack', {

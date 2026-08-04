@@ -5,6 +5,7 @@
 - Initial focus on banner open now lands on "Accept All" (previously "Reject All").
 - When GPC or DNT is active, the dismiss button is relabeled from "Reject All" to "Close".
 - Added `scripts/screenshot.mjs` for regenerating README screenshots.
+- GPC/DNT banner respects stored consent and does not reappear on reload after dismissal.
 - Planned for the `1.0.0` stable release.
 
 ## 1.0.0

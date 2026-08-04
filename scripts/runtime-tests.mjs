@@ -108,9 +108,9 @@ class FakeBodyElement extends FakeElement {
     banner._queryMap['#cookie-consent-btn-accept-some'] = acceptSome;
     banner._queryMap['#cookie-consent-btn-accept-all'] = acceptAll;
     banner._queryAllMap['button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'] = [
-      rejectAll,
-      acceptSome,
       acceptAll,
+      acceptSome,
+      rejectAll,
       analytics,
       marketing,
       preferences,
@@ -289,6 +289,7 @@ function testFreshBoot() {
   const runtime = createRuntime();
   const banner = runtime.document.getElementById('cookie-consent-banner');
   const rejectAll = runtime.document.getElementById('cookie-consent-btn-reject-all');
+  const acceptAll = runtime.document.getElementById('cookie-consent-btn-accept-all');
 
   assert.ok(runtime.window.cookieconsent, 'public API should exist');
   assert.equal(typeof runtime.window.cookieconsent.show, 'function');
@@ -297,7 +298,7 @@ function testFreshBoot() {
 
   assert.ok(banner, 'banner should be injected');
   assert.equal(banner.hidden, false, 'banner should be visible on first boot');
-  assert.equal(runtime.document.activeElement, rejectAll, 'banner should focus the reject action');
+  assert.equal(runtime.document.activeElement, acceptAll, 'banner should focus the accept action');
 
   const defaults = gtagCalls(runtime, 'consent').find((entry) => entry[1] === 'default');
   assert.ok(defaults, 'default consent call should be sent');
@@ -377,7 +378,7 @@ function testShowHideFocusRestoration() {
   runtime.document.activeElement = opener;
 
   runtime.window.cookieconsent.show();
-  assert.equal(runtime.document.activeElement.id, 'cookie-consent-btn-reject-all', 'show() should focus the first action');
+  assert.equal(runtime.document.activeElement.id, 'cookie-consent-btn-accept-all', 'show() should focus the first action');
 
   runtime.window.cookieconsent.hide();
   assert.equal(runtime.document.activeElement, opener, 'hide() should restore the previously focused element');

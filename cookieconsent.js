@@ -108,9 +108,9 @@ const COOKIE_CONSENT_BANNER_DOM = `
       <span>Your browser has sent a <strong>Do Not Track</strong> signal. Data collection has been disabled automatically. You may close this notice.</span>
     </div>
     <div class="cookie-consent-buttons" role="group" aria-label="Cookie consent actions">
-      <button id="cookie-consent-btn-reject-all" type="button" class="cookie-consent-button btn-grayscale">Reject All</button>
-      <button id="cookie-consent-btn-accept-some" type="button" class="cookie-consent-button btn-outline">Accept Selection</button>
       <button id="cookie-consent-btn-accept-all" type="button" class="cookie-consent-button btn-success">Accept All</button>
+      <button id="cookie-consent-btn-accept-some" type="button" class="cookie-consent-button btn-outline">Accept Selection</button>
+      <button id="cookie-consent-btn-reject-all" type="button" class="cookie-consent-button btn-grayscale">Reject All</button>
     </div>
   </div>
 `;
@@ -511,7 +511,10 @@ function applyPrivacySignalLock(noticeId) {
     input.setAttribute('data-privacy-locked', 'true');
   });
 
-  // Disable Accept All and Accept Selection; only Reject All remains
+  // When a privacy signal is active, relabel the dismiss button
+  cookieConsentElements.rejectAllButton.textContent = 'Close';
+
+  // Disable Accept All and Accept Selection; only Close remains
   cookieConsentElements.acceptAllButton.disabled = true;
   cookieConsentElements.acceptAllButton.setAttribute('aria-disabled', 'true');
   cookieConsentElements.acceptSomeButton.disabled = true;
@@ -606,6 +609,9 @@ function showBanner() {
   } else if (dnt()) {
     applyDntLock();
   } else {
+    // Restore button text if it was changed by a previous privacy signal lock
+    cookieConsentElements.rejectAllButton.textContent = 'Reject All';
+
     const cm = getStoredConsent();
     if (cm && cm.functionality_storage) {
       if (cm.functionality_storage == 'granted') {
@@ -628,7 +634,10 @@ function showBanner() {
   cookieConsentBanner.style.display = 'flex';
   cookieConsentBanner.setAttribute('aria-hidden', 'false');
   window.setTimeout(() => {
-    const focusTarget = cookieConsentElements.rejectAllButton || cookieConsentBanner;
+    // In GPC/DNT mode, Accept All is hidden; focus the Close button instead
+    const focusTarget = (gpc() || dnt())
+      ? cookieConsentElements.rejectAllButton
+      : cookieConsentElements.acceptAllButton;
     if (focusTarget && typeof focusTarget.focus === 'function') {
       focusTarget.focus();
     }

@@ -14,10 +14,10 @@ test('boots with a region-scoped default and shows the banner', async ({ page })
   await page.goto('/');
 
   const banner = page.locator('#cookie-consent-banner');
-  const rejectButton = page.locator('#cookie-consent-btn-reject-all');
+  const acceptAllButton = page.locator('#cookie-consent-btn-accept-all');
 
   await expect(banner).toBeVisible();
-  await expect(rejectButton).toBeFocused();
+  await expect(acceptAllButton).toBeFocused();
 
   const bootState = await page.evaluate(() => {
     const defaults = window.dataLayer.filter((entry) => entry[0] === 'consent' && entry[1] === 'default');
@@ -124,13 +124,13 @@ test('public show and hide restore focus', async ({ page }) => {
 
   await page.goto('/');
   await page.locator('#open-banner').click();
-  await expect(page.locator('#cookie-consent-btn-reject-all')).toBeFocused();
+  await expect(page.locator('#cookie-consent-btn-accept-all')).toBeFocused();
 
   await page.evaluate(() => window.cookieconsent.hide());
   await expect(page.locator('#open-banner')).toBeFocused();
 
   await page.evaluate(() => window.cookieconsent.show());
-  await expect(page.locator('#cookie-consent-btn-reject-all')).toBeFocused();
+  await expect(page.locator('#cookie-consent-btn-accept-all')).toBeFocused();
 });
 
 test('reopening the banner reflects stored consent state', async ({ page }) => {
@@ -195,8 +195,10 @@ test('GPC signal shows notice, locks toggles, and denies all data collection', a
   await expect(page.locator('#cookie-consent-btn-accept-all')).toBeHidden();
   await expect(page.locator('#cookie-consent-btn-accept-some')).toBeHidden();
 
-  // Reject All button remains visible for dismissal
-  await expect(page.locator('#cookie-consent-btn-reject-all')).toBeVisible();
+  // Close button remains visible for dismissal
+  const closeBtn = page.locator('#cookie-consent-btn-reject-all');
+  await expect(closeBtn).toBeVisible();
+  await expect(closeBtn).toHaveText('Close');
 
   // GPC notice is visible (outside the fieldset, between it and buttons)
   await expect(page.locator('#gpc-notice')).toBeVisible();
@@ -220,7 +222,7 @@ test('GPC signal shows notice, locks toggles, and denies all data collection', a
   });
 });
 
-test('GPC user can close banner with Reject All and consent persists as denied', async ({ page }) => {
+test('GPC user can close banner with Close and consent persists as denied', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'globalPrivacyControl', {
       get: () => true,
@@ -231,7 +233,7 @@ test('GPC user can close banner with Reject All and consent persists as denied',
 
   await expect(page.locator('#gpc-notice')).toBeVisible();
 
-  // User clicks Reject All to close
+  // User clicks Close to close
   await page.locator('#cookie-consent-btn-reject-all').click();
 
   await expect(page.locator('#cookie-consent-banner')).toBeHidden();
@@ -292,8 +294,10 @@ test('DNT signal shows notice, locks toggles, and denies all data collection', a
   await expect(page.locator('#cookie-consent-btn-accept-all')).toBeHidden();
   await expect(page.locator('#cookie-consent-btn-accept-some')).toBeHidden();
 
-  // Reject All button remains visible for dismissal
-  await expect(page.locator('#cookie-consent-btn-reject-all')).toBeVisible();
+  // Close button remains visible for dismissal
+  const closeBtn = page.locator('#cookie-consent-btn-reject-all');
+  await expect(closeBtn).toBeVisible();
+  await expect(closeBtn).toHaveText('Close');
 
   // Fieldset is hidden (DNT notice replaces it visually)
   const fieldsetHidden = await page.evaluate(() => {
@@ -302,7 +306,7 @@ test('DNT signal shows notice, locks toggles, and denies all data collection', a
   expect(fieldsetHidden).toBe(true);
 });
 
-test('DNT user can close banner with Reject All and consent persists as denied', async ({ page }) => {
+test('DNT user can close banner with Close and consent persists as denied', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'doNotTrack', {
       get: () => '1',
@@ -313,7 +317,7 @@ test('DNT user can close banner with Reject All and consent persists as denied',
 
   await expect(page.locator('#dnt-notice')).toBeVisible();
 
-  // User clicks Reject All to close
+  // User clicks Close to close
   await page.locator('#cookie-consent-btn-reject-all').click();
 
   await expect(page.locator('#cookie-consent-banner')).toBeHidden();

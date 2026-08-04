@@ -108,9 +108,9 @@ class FakeBodyElement extends FakeElement {
     banner._queryMap['#cookie-consent-btn-accept-some'] = acceptSome;
     banner._queryMap['#cookie-consent-btn-accept-all'] = acceptAll;
     banner._queryAllMap['button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'] = [
-      acceptAll,
-      acceptSome,
       rejectAll,
+      acceptSome,
+      acceptAll,
       analytics,
       marketing,
       preferences,

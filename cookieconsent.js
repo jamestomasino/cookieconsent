@@ -108,9 +108,9 @@ const COOKIE_CONSENT_BANNER_DOM = `
       <span>Your browser has sent a <strong>Do Not Track</strong> signal. Data collection has been disabled automatically. You may close this notice.</span>
     </div>
     <div class="cookie-consent-buttons" role="group" aria-label="Cookie consent actions">
-      <button id="cookie-consent-btn-accept-all" type="button" class="cookie-consent-button btn-success">Accept All</button>
-      <button id="cookie-consent-btn-accept-some" type="button" class="cookie-consent-button btn-outline">Accept Selection</button>
       <button id="cookie-consent-btn-reject-all" type="button" class="cookie-consent-button btn-grayscale">Reject All</button>
+      <button id="cookie-consent-btn-accept-some" type="button" class="cookie-consent-button btn-outline">Accept Selection</button>
+      <button id="cookie-consent-btn-accept-all" type="button" class="cookie-consent-button btn-success">Accept All</button>
     </div>
   </div>
 `;
